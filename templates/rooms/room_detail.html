@@ -1,0 +1,1350 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ room.name }} · Planning Pocket{% endblock %}
+{% block shell_class %}room-shell{% endblock %}
+{% block body_class %}is-room{% endblock %}
+
+{% block content %}
+{% include 'rooms/_table_sprite.html' %}
+<section class="poker-room" data-owner="{{ is_owner|yesno:'true,false' }}">
+    <header class="room-topbar">
+        <div class="room-brand">
+            <span class="room-mark" aria-hidden="true">P</span>
+            <div><span class="room-kicker">Mesa de planning</span><strong>{{ room.name }}</strong><span class="room-code">#{{ room.public_id }}</span></div>
+        </div>
+        <div class="room-top-actions">
+            {% if is_owner %}<span class="facilitator-badge">Facilitador</span>{% endif %}
+            {% if is_owner %}
+                <button class="room-switch" type="button" id="playful-switch" aria-pressed="{{ room.allow_playful_actions|yesno:'true,false' }}">
+                    <span class="switch-dot" aria-hidden="true"></span><span class="switch-label">Juego</span>
+                </button>
+                <button class="room-switch" type="button" id="recess-switch" aria-pressed="{{ room.recess_open|yesno:'true,false' }}">
+                    <span class="switch-dot" aria-hidden="true"></span><span class="switch-label">Recreo</span>
+                </button>
+                <button class="room-switch" type="button" id="deck-switch" aria-pressed="{{ deck_expanded|yesno:'true,false' }}" title="Añade 21, 34, 55, 89 y el café">
+                    <span class="switch-dot" aria-hidden="true"></span><span class="switch-label">Baraja larga</span>
+                </button>
+            {% endif %}
+            <button class="room-switch" type="button" id="effects-switch" aria-pressed="true">
+                <span class="switch-dot" aria-hidden="true"></span><span class="switch-label">Efectos</span>
+            </button>
+            <button class="room-switch" type="button" id="sound-switch" aria-pressed="false">
+                <span class="switch-dot" aria-hidden="true"></span><span class="switch-label">Sonido</span>
+            </button>
+            <details class="character-panel" id="character-panel">
+                <summary class="room-switch"><span class="switch-dot" aria-hidden="true"></span><span class="switch-label">Personaje</span></summary>
+                <div class="character-sheet">
+                    <fieldset class="pick-grid pick-pet">
+                        <legend>Tu mascota</legend>
+                        <ul>
+                            {% for slug, label in pets %}
+                                <li>
+                                    <input type="radio" name="room-pet" id="room-pet-{{ slug }}" value="{{ slug }}" {% if participant.identity.pet == slug %}checked{% endif %}>
+                                    <label for="room-pet-{{ slug }}"><svg viewBox="0 0 40 40" aria-hidden="true"><use href="#pet-{{ slug }}"></use></svg>{{ label }}</label>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </fieldset>
+                    <fieldset class="pick-grid pick-color">
+                        <legend>Tu color</legend>
+                        <ul>
+                            {% for index, label in colors %}
+                                <li>
+                                    <input type="radio" name="room-color" id="room-color-{{ index }}" value="{{ index }}" {% if participant.identity.color == index %}checked{% endif %}>
+                                    <label for="room-color-{{ index }}" style="--pick-hue: var(--seat-hue-{{ index }});"><span class="sr-only">{{ label }}</span></label>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </fieldset>
+                </div>
+            </details>
+            <span id="ws-status" class="connection-state" title="Conectando"><span aria-hidden="true"></span><span class="connection-label">Conectando</span></span>
+            <button class="room-button room-button-secondary" type="button" id="share-room"><span aria-hidden="true">↗</span> Compartir</button>
+        </div>
+    </header>
+
+    <div class="room-workspace">
+        <details class="room-sidebar" id="room-sidebar" open>
+            <summary class="sidebar-heading"><span>Historias</span><span><span class="issue-count" aria-label="{{ issues|length }} historias">{{ issues|length }}</span> <span class="sidebar-caret" aria-hidden="true">▸</span></span></summary>
+            {% if is_owner %}
+                <form method="post" class="issue-form">
+                    {% csrf_token %}
+                    <label class="sr-only" for="{{ issue_form.title.id_for_label }}">Título de la historia</label>
+                    {{ issue_form.title }}
+                    <label class="sr-only" for="{{ issue_form.description.id_for_label }}">Descripción opcional</label>
+                    {{ issue_form.description }}
+                    <button class="room-button room-button-secondary" type="submit" name="add_issue"><span aria-hidden="true">＋</span> Añadir historia</button>
+                </form>
+            {% endif %}
+            <ul class="room-issue-list" id="room-issues">
+                {% for issue in issues %}
+                    <li class="room-issue {% if room.active_issue_id == issue.id %}is-active{% endif %}" data-issue-id="{{ issue.id }}">
+                        <div>
+                            <small>{% if issue.status == 'estimated' %}Estimado · {{ issue.final_result }}{% elif room.active_issue_id == issue.id %}En estimación{% else %}Pendiente{% endif %}</small>
+                            <span>{{ issue.title }}</span>
+                        </div>
+                        {% if is_owner and issue.status != 'estimated' %}
+                            <button class="issue-activate" type="button" data-activate-issue="{{ issue.id }}" aria-label="Estimar {{ issue.title }}">Estimar</button>
+                        {% endif %}
+                    </li>
+                {% empty %}
+                    <li class="issues-empty">Añade una historia para comenzar.</li>
+                {% endfor %}
+            </ul>
+            {% if is_owner and room.status == 'active' %}
+                <form action="{% url 'close_room' room.public_id %}" method="post" class="close-room-form">
+                    {% csrf_token %}
+                    <button type="submit" class="close-room">Cerrar sala</button>
+                </form>
+            {% endif %}
+        </details>
+
+        <section class="poker-table-card" id="poker-table-card">
+            <div class="round-heading" id="active-issue-display">
+                <div class="round-status {% if room.voting_status == 'revealed' %}is-revealed{% endif %}"><span aria-hidden="true"></span><span id="round-label">{% if room.voting_status == 'revealed' %}Votos revelados{% else %}Votación abierta{% endif %}</span></div>
+                {% if room.active_issue %}
+                    <h1>{{ room.active_issue.title }}</h1>
+                    <p>{{ room.active_issue.description }}</p>
+                {% else %}
+                    <h1>Estimación libre</h1>
+                    <p>Vota directamente o añade una historia para organizar la sesión.</p>
+                {% endif %}
+            </div>
+
+            <div class="table-stage" id="table-stage">
+                <div class="table-oval" aria-hidden="true"></div>
+                <div class="table-glow" id="table-glow" aria-hidden="true"></div>
+                <div class="table-marks">
+                    <span class="table-count" id="table-count" aria-hidden="true"></span>
+                    <span class="table-pile" id="table-pile" aria-hidden="true"></span>
+                    <span class="table-tally" id="table-tally" aria-live="polite"></span>
+                </div>
+                <div class="table-empty" id="table-empty">
+                    <span class="seat-pet" aria-hidden="true"><svg viewBox="0 0 40 40"><use href="#pet-{{ participant.identity.pet }}"></use></svg></span>
+                    <strong>Por ahora estáis tu mascota y tú</strong>
+                    <span>Comparte el enlace de la sala y el resto irá tomando asiento a tu alrededor.</span>
+                </div>
+                <div class="recess-layer" id="recess-layer">
+                    <div class="recess-floor" id="recess-floor" role="application" tabindex="-1" aria-label="Recreo: usa las flechas para moverte por la sala"></div>
+                    <span class="recess-note">Recreo · la votación sigue abierta</span>
+                </div>
+                <div class="table-seats" id="participants-list" aria-live="polite">
+                    {% for p in participants %}{% with ident=p.identity %}
+                        <article class="table-seat {% if p.id == participant.id %}is-me{% endif %} {% if p.current_vote %}has-voted{% else %}is-thinking{% endif %} {% if room.voting_status == 'revealed' %}is-revealed{% endif %}" id="participant-{{ p.id }}" data-participant-id="{{ p.id }}" style="--seat-hue: var(--seat-hue-{{ ident.color }});">
+                            <div class="seat-figure">
+                                <span class="seat-pet" aria-hidden="true"><svg viewBox="0 0 40 40"><use href="#pet-{{ ident.pet }}"></use></svg><span class="seat-zzz">z</span></span>
+                                {% if p.id == participant.id %}
+                                    <span class="seat-avatar" aria-hidden="true"><svg viewBox="0 0 30 22"><use href="#face-{{ ident.avatar }}"></use></svg></span>
+                                {% else %}
+                                    <button class="seat-avatar" type="button" data-throw-target="{{ p.id }}" aria-label="Lanzar algo a {{ p.display_name }}"><svg viewBox="0 0 30 22" aria-hidden="true"><use href="#face-{{ ident.avatar }}"></use></svg></button>
+                                {% endif %}
+                                <div class="participant-card">
+                                    <div class="participant-card-inner">
+                                        <div class="participant-face participant-back"></div>
+                                        <div class="participant-face participant-front {% if not p.current_vote %}no-vote{% endif %}" id="vote-status-{{ p.id }}">{% if p.current_vote and room.voting_status == 'revealed' %}{{ p.current_vote }}{% else %}—{% endif %}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="seat-name">{{ p.display_name }}{% if p.user_id == room.owner_id %}<span class="seat-crown" title="Lleva esta sala">Facilita</span>{% endif %}{% if p.id == participant.id %}<span>Tú</span>{% endif %}</div>
+                            <div class="seat-state" id="state-status-{{ p.id }}">{% if p.current_vote %}{% if p.id == participant.id %}Tu voto{% else %}Votó{% endif %}{% else %}Pensando{% endif %}</div>
+                            {% if is_owner and p.id != participant.id %}
+                                <button class="seat-reminder" type="button" hidden data-remind="{{ p.id }}">Recordar</button>
+                                {% comment %}
+                                Absoluto como el recordatorio, y por el mismo motivo: nada que
+                                cambie de tamaño durante la ronda puede estar en el flujo del
+                                asiento, o el anillo se redimensiona a mitad de partida.
+                                {% endcomment %}
+                                <button class="seat-remove" type="button" data-remove="{{ p.id }}" data-name="{{ p.display_name }}" aria-label="Expulsar a {{ p.display_name }} de la sala" title="Expulsar a {{ p.display_name }}">×</button>
+                            {% endif %}
+                        </article>
+                    {% endwith %}{% endfor %}
+                </div>
+            </div>
+
+            <div class="round-result" id="round-result" hidden>
+                <div class="result-figures">
+                    <span class="result-figure"><strong id="result-average">—</strong><span>Promedio</span></span>
+                    <span class="result-figure"><strong id="result-range">—</strong><span>Rango</span></span>
+                    <span class="result-figure"><strong id="result-count">—</strong><span>Votos</span></span>
+                    <p class="result-verdict" id="result-verdict"></p>
+                </div>
+                <ul class="result-bars" id="result-bars"></ul>
+            </div>
+
+            <div class="room-controls">
+                {% if is_owner %}
+                    <button class="room-button room-button-primary" id="reveal-button" type="button"><span aria-hidden="true">◇</span> Revelar votos</button>
+                    <button class="room-button room-button-secondary" id="reset-button" type="button"><span aria-hidden="true">↻</span> Nueva ronda</button>
+                    <div id="finish-issue-panel" class="finish-issue" {% if room.voting_status != 'revealed' or not room.active_issue %}hidden{% endif %}>
+                        <label class="sr-only" for="final-result-input">Estimación final</label>
+                        <input type="text" id="final-result-input" placeholder="Estimación final" inputmode="decimal">
+                        <button class="room-button room-button-primary" type="button" id="finish-issue-button">Guardar</button>
+                    </div>
+                {% endif %}
+            </div>
+        </section>
+
+        <section class="room-deck-wrap" aria-label="Tu baraja" id="room-deck-wrap">
+            <div class="deck-heading"><div><span class="deck-eyebrow">Tu baraja</span><strong>Elige una carta</strong></div><span id="deck-help">Tu elección permanece privada hasta el reveal.</span></div>
+            <div class="deck" id="deck">
+                {% for card in deck_cards %}
+                    <button class="poker-card {% if card == 'Coffee' %}is-wide-value{% endif %}" type="button" style="--card-index: {{ forloop.counter0 }}; --card-total: {{ deck_cards|length }};" aria-label="Votar {{ card }}" aria-pressed="false" data-card="{{ card }}" {% if room.voting_status == 'revealed' %}disabled{% endif %}><span>{{ card }}</span></button>
+                {% endfor %}
+            </div>
+            <div class="throw-tray" id="throw-tray" role="group" aria-label="Objeto para lanzar" {% if not room.allow_playful_actions %}hidden{% endif %}>
+                <span class="throw-tray-label">Para lanzar</span>
+                {% for slug, label in throwables %}
+                    <button class="throw-item" type="button" data-item="{{ slug }}" aria-pressed="{% if forloop.first %}true{% else %}false{% endif %}" title="{{ label }}" aria-label="{{ label }}"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#item-{{ slug }}"></use></svg></button>
+                {% endfor %}
+                <p class="throw-hint">Elige un objeto y haz clic en la cara de alguien. Es sólo decoración: no cambia ningún voto. <b>Tab</b> y las flechas también recorren la mesa.</p>
+            </div>
+        </section>
+    </div>
+</section>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script nonce="{{ csp_nonce }}">
+const publicId = "{{ room.public_id }}";
+const myParticipantId = {{ participant.id }};
+const isFacilitator = {{ is_owner|yesno:"true,false" }};
+const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+const wsUrl = protocol + window.location.host + '/ws/room/' + publicId + '/';
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const STAGGER = 70;
+let ws;
+let myCurrentVote = null;
+/* Lo último que el servidor dice que tengo. La selección de carta es optimista —se
+   pinta antes de que conteste nadie—, así que si la acción se rechaza hay que
+   deshacerla: sin esto, un voto refusado se queda pintado y la mesa y tu pantalla
+   dicen cosas distintas. */
+let confirmedVote = null;
+let currentIssue = null;
+let allowPlayful = {{ room.allow_playful_actions|yesno:"true,false" }};
+let selectedItem = '{{ throwables.0.0 }}';
+/* A personal switch, remembered per browser. Independent of the facilitator's
+   room-wide one: either being off is enough to stop the effects here. */
+let effectsOn = true;
+try { effectsOn = localStorage.getItem('planning-pocket-effects') !== 'off'; } catch (_) {}
+let recessOpen = {{ room.recess_open|yesno:"true,false" }};
+/* Positions live only here, for as long as the recess lasts. Nothing is stored on
+   the server and nothing survives a reveal. */
+const walkers = new Map();
+let walkerFrame = null;
+let lastMoveSent = 0;
+const RECESS_SPOTS = [
+    {slug: 'cafetera', label: 'Cafetera', x: 0.11, y: 0.2, coffee: true},
+    {slug: 'agua', label: 'Dispensador', x: 0.89, y: 0.2},
+    {slug: 'pizarra', label: 'Pizarra', x: 0.11, y: 0.84},
+    {slug: 'ventana', label: 'Ventana', x: 0.89, y: 0.84}
+];
+const ITEM_LABELS = {
+{% for slug, label in throwables %}    '{{ slug }}': '{{ label }}',
+{% endfor %}};
+let votingStatus = "{{ room.voting_status }}";
+let deckExpanded = {{ deck_expanded|yesno:"true,false" }};
+/* Una vez expulsado no se vuelve a marcar: corta el bucle de reconexión. */
+let wasRemoved = false;
+
+function showToast(message, isError = false) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.classList.toggle('is-error', isError);
+    toast.classList.add('show');
+    window.setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+function seatList() {
+    return Array.from(document.querySelectorAll('.table-seat'));
+}
+
+/* Seats are spaced evenly along the ellipse by arc length, not by angle: equal
+   angles bunch up near the ends of the minor axis and start overlapping around ten
+   people. The walk starts at the bottom of the ring so slot 0 sits front-centre. */
+function ringAngles(total, rx, ry) {
+    const SAMPLES = 720;
+    const walk = [];
+    let travelled = 0;
+    let previous = null;
+    for (let step = 0; step <= SAMPLES; step += 1) {
+        const t = Math.PI / 2 + (step / SAMPLES) * Math.PI * 2;
+        const point = [rx * Math.cos(t), ry * Math.sin(t)];
+        if (previous) travelled += Math.hypot(point[0] - previous[0], point[1] - previous[1]);
+        walk.push({ length: travelled, angle: t });
+        previous = point;
+    }
+    const spacing = travelled / total;
+    const angles = [];
+    let cursor = 0;
+    for (let slot = 0; slot < total; slot += 1) {
+        const target = slot * spacing;
+        while (cursor < walk.length - 1 && walk[cursor].length < target) cursor += 1;
+        angles.push(walk[cursor].angle);
+    }
+    return angles;
+}
+
+/* A crowded table needs a smaller footprint per person and a taller stage, or the
+   seats collide no matter how evenly they are spaced. */
+function ringMetrics(total) {
+    if (total >= 15) return { stage: 500, seat: '84px', card: ['32px', '46px'], av: '24px', pet: '18px' };
+    if (total >= 12) return { stage: 470, seat: '98px', card: ['38px', '54px'], av: '28px', pet: '22px' };
+    if (total >= 9) return { stage: 430, seat: '116px', card: ['44px', '62px'], av: '34px', pet: '26px' };
+    return { stage: 390, seat: '140px', card: ['52px', '72px'], av: '40px', pet: '30px' };
+}
+
+/* The ring order is the server's (by joined_at), so neighbours are the same for
+   everyone; it is only rotated locally so each person sees their own seat at the
+   bottom. */
+function layoutSeats() {
+    const seats = seatList();
+    const total = seats.length;
+    if (!total) return;
+    const stage = document.getElementById('table-stage');
+    const metrics = ringMetrics(total);
+    stage.style.setProperty('--stage-h', metrics.stage + 'px');
+    stage.style.setProperty('--seat-w', metrics.seat);
+    stage.style.setProperty('--card-w', metrics.card[0]);
+    stage.style.setProperty('--card-h', metrics.card[1]);
+    stage.style.setProperty('--av-w', metrics.av);
+    stage.style.setProperty('--pet-w', metrics.pet);
+
+    /* Radii come from the room the seats actually leave, not from a fixed
+       percentage: that is what keeps the outermost seat inside the stage. */
+    const box = stage.getBoundingClientRect();
+    let widest = 0;
+    let tallest = 0;
+    seats.forEach(seat => {
+        const rect = seat.getBoundingClientRect();
+        if (rect.width > widest) widest = rect.width;
+        if (rect.height > tallest) tallest = rect.height;
+    });
+    const rx = Math.max(40, (box.width - widest) / 2 - 4);
+    const ry = Math.max(30, (box.height - tallest) / 2 - 4);
+    stage.style.setProperty('--ring-rx', rx.toFixed(1) + 'px');
+    stage.style.setProperty('--ring-ry', ry.toFixed(1) + 'px');
+    const angles = ringAngles(total, rx, ry);
+
+    const mine = seats.findIndex(seat => Number(seat.dataset.participantId) === myParticipantId);
+    const offset = mine < 0 ? 0 : mine;
+    seats.forEach((seat, index) => {
+        const slot = (index - offset + total) % total;
+        seat.style.setProperty('--seat-angle', (angles[slot] * 180 / Math.PI).toFixed(2) + 'deg');
+        seat.style.setProperty('--seat-index', String(slot));
+    });
+}
+
+let relayoutTimer = null;
+window.addEventListener('resize', () => {
+    window.clearTimeout(relayoutTimer);
+    relayoutTimer = window.setTimeout(() => {
+        layoutSeats();
+        /* Seats moved, so the walkers' way home moved with them. */
+        if (walkers.size) {
+            seatList().forEach(seat => {
+                const walker = walkers.get(Number(seat.dataset.participantId));
+                if (walker) walker.home = seatNormalised(seat);
+            });
+        }
+    }, 120);
+});
+
+/* The felt centre reports the round instead of showing a static monogram. */
+function syncTableMarks() {
+    const seats = seatList();
+    const total = seats.length;
+    /* One person is a normal state, not a broken one: the felt says so instead of
+       showing an empty oval and a counter of one. */
+    document.getElementById('table-stage').classList.toggle('is-alone', total < 2);
+    const placed = seats.filter(seat => seat.classList.contains('has-voted')).length;
+    /* One card on the felt per vote placed. Driven by existence rather than by
+       fading a fixed row in and out, so the pile cannot disagree with the tally. */
+    const pile = document.getElementById('table-pile');
+    while (pile.children.length > placed) pile.lastElementChild.remove();
+    while (pile.children.length < placed) {
+        const card = document.createElement('span');
+        card.style.setProperty('--pile-tilt', (((pile.children.length * 37) % 19) - 9) + 'deg');
+        pile.append(card);
+    }
+    const tally = document.getElementById('table-tally');
+    tally.textContent = total === 0 ? '' : placed + ' de ' + total + (placed === 1 ? ' ha votado' : ' han votado');
+}
+
+/* Identity arrives with every seat payload, so a seat built over the WebSocket
+   looks exactly like one rendered by Django. Partial payloads (a vote, for
+   instance) carry no identity and must leave the current one alone. */
+function applyIdentity(seat, participant) {
+    if (!participant || participant.pet === undefined) return;
+    if (participant.color !== undefined && participant.color !== null) {
+        seat.style.setProperty('--seat-hue', 'var(--seat-hue-' + participant.color + ')');
+    }
+    const pet = seat.querySelector('.seat-pet use');
+    if (pet && participant.pet) pet.setAttribute('href', '#pet-' + participant.pet);
+    const face = seat.querySelector('.seat-avatar use');
+    if (face && participant.avatar) face.setAttribute('href', '#face-' + participant.avatar);
+}
+
+/* El sprite es SVG, así que sus nodos necesitan su propio espacio de nombres:
+   createElement('use') crea un elemento HTML desconocido que no dibuja nada. */
+function svgSymbol(viewBox, href) {
+    const NS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(NS, 'svg');
+    svg.setAttribute('viewBox', viewBox);
+    const use = document.createElementNS(NS, 'use');
+    use.setAttribute('href', href);
+    svg.append(use);
+    return svg;
+}
+
+function createParticipantCard(participant) {
+    const seat = document.createElement('article');
+    seat.className = 'table-seat is-thinking';
+    seat.id = 'participant-' + participant.id;
+    seat.dataset.participantId = participant.id;
+    const figure = document.createElement('div');
+    figure.className = 'seat-figure';
+    const isMe = participant.id === myParticipantId;
+
+    /* Construido nodo a nodo, no con innerHTML. El nombre lo escribe un tercero y
+       aquí acababa dentro de un atributo con una única defensa: borrar comillas
+       dobles. Funcionaba —un valor entrecomillado vuelve inerte a `<` y a `>`— pero
+       era una lista negra en el único sink de HTML del proyecto, a un refactor de
+       distancia de ser XSS almacenado para toda la sala. `setAttribute` no tiene
+       contexto del que escapar. */
+    const pet = document.createElement('span');
+    pet.className = 'seat-pet';
+    pet.setAttribute('aria-hidden', 'true');
+    pet.append(svgSymbol('0 0 40 40', '#pet-gato'));
+    const zzz = document.createElement('span');
+    zzz.className = 'seat-zzz';
+    zzz.textContent = 'z';
+    pet.append(zzz);
+
+    let avatar;
+    if (isMe) {
+        avatar = document.createElement('span');
+        avatar.setAttribute('aria-hidden', 'true');
+    } else {
+        avatar = document.createElement('button');
+        avatar.type = 'button';
+        avatar.dataset.throwTarget = participant.id;
+        avatar.setAttribute('aria-label', 'Lanzar algo a ' + participant.display_name);
+    }
+    avatar.className = 'seat-avatar';
+    avatar.append(svgSymbol('0 0 30 22', '#face-sereno'));
+    figure.append(pet, avatar);
+    const card = document.createElement('div');
+    card.className = 'participant-card';
+    const inner = document.createElement('div');
+    inner.className = 'participant-card-inner';
+    const back = document.createElement('div');
+    back.className = 'participant-face participant-back';
+    const front = document.createElement('div');
+    front.className = 'participant-face participant-front no-vote';
+    front.id = 'vote-status-' + participant.id;
+    front.textContent = '—';
+    inner.append(back, front);
+    card.append(inner);
+    figure.append(card);
+    const name = document.createElement('div');
+    name.className = 'seat-name';
+    name.textContent = participant.display_name;
+    if (participant.is_facilitator) {
+        const crown = document.createElement('span');
+        crown.className = 'seat-crown';
+        crown.title = 'Lleva esta sala';
+        crown.textContent = 'Facilita';
+        name.append(crown);
+    }
+    if (isMe) {
+        const me = document.createElement('span');
+        me.textContent = 'Tú';
+        name.append(me);
+        seat.classList.add('is-me');
+    }
+    const state = document.createElement('div');
+    state.className = 'seat-state';
+    state.id = 'state-status-' + participant.id;
+    state.textContent = 'Pensando';
+    seat.append(figure, name, state);
+    applyIdentity(seat, participant);
+    syncThrowTargets();
+    if (isFacilitator && participant.id !== myParticipantId) {
+        const reminder = document.createElement('button');
+        reminder.className = 'seat-reminder';
+        reminder.type = 'button';
+        reminder.textContent = 'Recordar';
+        reminder.hidden = true;
+        reminder.dataset.remind = participant.id;
+        seat.append(reminder);
+
+        const expel = document.createElement('button');
+        expel.className = 'seat-remove';
+        expel.type = 'button';
+        expel.textContent = '×';
+        expel.dataset.remove = participant.id;
+        expel.dataset.name = participant.display_name;
+        expel.setAttribute('aria-label', 'Expulsar a ' + participant.display_name + ' de la sala');
+        expel.title = 'Expulsar a ' + participant.display_name;
+        seat.append(expel);
+    }
+    return seat;
+}
+
+function renderParticipant(participant) {
+    let seat = document.getElementById('participant-' + participant.id);
+    if (!seat) {
+        seat = createParticipantCard(participant);
+        document.getElementById('participants-list').append(seat);
+        layoutSeats();
+    }
+    applyIdentity(seat, participant);
+    const isMe = participant.id === myParticipantId;
+    const revealed = votingStatus === 'revealed';
+    const wasVoted = seat.classList.contains('has-voted');
+    seat.classList.toggle('has-voted', participant.has_voted);
+    seat.classList.toggle('is-thinking', !participant.has_voted && participant.is_online);
+    seat.classList.toggle('is-offline', !participant.is_online);
+    seat.classList.toggle('is-revealed', revealed);
+    const front = seat.querySelector('.participant-front');
+    front.classList.toggle('no-vote', !participant.has_voted);
+    front.textContent = revealed && participant.has_voted ? participant.current_vote : '—';
+    const state = seat.querySelector('.seat-state');
+    state.textContent = !participant.is_online ? 'Ausente' : participant.has_voted ? (isMe ? 'Tu voto' : 'Votó') : 'Pensando';
+    const reminder = seat.querySelector('.seat-reminder');
+    if (reminder) reminder.hidden = !(!revealed && participant.is_online && !participant.has_voted);
+    if (!revealed && !wasVoted && participant.has_voted && !reduceMotion) {
+        seat.classList.remove('just-voted');
+        void seat.offsetWidth;
+        seat.classList.add('just-voted');
+        window.setTimeout(() => seat.classList.remove('just-voted'), 480);
+    }
+    syncTableMarks();
+}
+
+function renderActiveIssue(issue) {
+    const display = document.getElementById('active-issue-display');
+    display.replaceChildren();
+    const status = document.createElement('div');
+    status.className = 'round-status' + (votingStatus === 'revealed' ? ' is-revealed' : '');
+    const dot = document.createElement('span');
+    dot.setAttribute('aria-hidden', 'true');
+    const label = document.createElement('span');
+    label.id = 'round-label';
+    label.textContent = votingStatus === 'revealed' ? 'Votos revelados' : issue ? 'Votación abierta' : 'Estimación libre';
+    status.append(dot, label);
+    const title = document.createElement('h1');
+    title.textContent = issue ? issue.title : 'Esperando una historia';
+    const description = document.createElement('p');
+    description.textContent = issue ? issue.description : 'El facilitador seleccionará la siguiente historia a estimar.';
+    display.append(status, title, description);
+}
+
+/* The round result is the emotional peak: a figure, a range, a verdict and the
+   distribution, so a split table can see *where* it split. */
+function setResults(results, participants) {
+    const panel = document.getElementById('round-result');
+    if (!results) {
+        panel.hidden = true;
+        document.getElementById('result-bars').replaceChildren();
+        return;
+    }
+    const votes = (participants || []).filter(p => p.has_voted && p.current_vote).map(p => String(p.current_vote));
+    const numbers = votes.map(Number).filter(value => !Number.isNaN(value));
+    document.getElementById('result-average').textContent = results.average === null ? '—' : results.average;
+    document.getElementById('result-range').textContent = numbers.length > 1
+        ? Math.min.apply(null, numbers) + '–' + Math.max.apply(null, numbers)
+        : '—';
+    document.getElementById('result-count').textContent = results.vote_count;
+    const verdict = document.getElementById('result-verdict');
+    verdict.textContent = results.has_consensus ? 'Consenso' : 'Sin consenso';
+    verdict.className = 'result-verdict ' + (results.has_consensus ? 'is-consensus' : 'is-split');
+
+    const counts = new Map();
+    votes.forEach(vote => counts.set(vote, (counts.get(vote) || 0) + 1));
+    const keys = Array.from(counts.keys()).sort((a, b) => {
+        const na = Number(a), nb = Number(b);
+        if (Number.isNaN(na) && Number.isNaN(nb)) return a.localeCompare(b);
+        if (Number.isNaN(na)) return 1;
+        if (Number.isNaN(nb)) return -1;
+        return na - nb;
+    });
+    const peak = Math.max.apply(null, [1].concat(Array.from(counts.values())));
+    const low = numbers.length ? String(Math.min.apply(null, numbers)) : null;
+    const high = numbers.length ? String(Math.max.apply(null, numbers)) : null;
+    const bars = document.getElementById('result-bars');
+    bars.replaceChildren();
+    keys.forEach((key, index) => {
+        const item = document.createElement('li');
+        const isEdge = !results.has_consensus && numbers.length > 1 && (key === low || key === high);
+        item.className = 'result-bar' + (isEdge ? ' is-edge' : '');
+        item.style.setProperty('--bar-index', String(index));
+        const fill = document.createElement('b');
+        fill.style.height = Math.round((counts.get(key) / peak) * 44 + 6) + 'px';
+        const value = document.createElement('span');
+        value.textContent = key;
+        const many = document.createElement('small');
+        many.textContent = '×' + counts.get(key);
+        item.append(fill, value, many);
+        bars.append(item);
+    });
+    panel.hidden = false;
+}
+
+function updateControls(activeIssue) {
+    const reveal = document.getElementById('reveal-button');
+    const finish = document.getElementById('finish-issue-panel');
+    if (reveal) reveal.hidden = votingStatus === 'revealed';
+    if (finish) finish.hidden = votingStatus !== 'revealed' || !activeIssue;
+    document.querySelectorAll('.poker-card').forEach(card => {
+        card.disabled = votingStatus === 'revealed';
+    });
+    document.getElementById('deck-help').textContent = votingStatus === 'revealed'
+        ? 'Los votos están sobre la mesa. Inicia una nueva ronda para continuar.'
+        : 'Tu elección permanece privada hasta el reveal.';
+}
+
+/* La mano se vuelve a repartir cuando cambia la baraja. Se reconstruye entera en
+   vez de añadir y quitar cartas sueltas porque el abanico depende de `--card-index`
+   y `--card-total`: con una carta de más o de menos, los ángulos que quedan son los
+   de la mano anterior. */
+function renderDeck(cards) {
+    const deck = document.getElementById('deck');
+    deck.replaceChildren();
+    cards.forEach((card, index) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'poker-card' + (card === 'Coffee' ? ' is-wide-value' : '');
+        button.style.setProperty('--card-index', index);
+        button.style.setProperty('--card-total', cards.length);
+        button.setAttribute('aria-label', 'Votar ' + card);
+        button.setAttribute('aria-pressed', 'false');
+        button.disabled = votingStatus === 'revealed';
+        button.dataset.card = card;
+        const value = document.createElement('span');
+        value.textContent = card;
+        button.append(value);
+        deck.append(button);
+    });
+    syncSelectedCard();
+    syncDeckDock();
+}
+
+function syncSelectedCard() {
+    document.querySelectorAll('.poker-card').forEach(card => {
+        const selected = card.querySelector('span').textContent === myCurrentVote;
+        card.classList.toggle('selected', selected);
+        card.setAttribute('aria-pressed', String(selected));
+    });
+}
+
+/* Placing a vote should feel like putting a card down, so the card travels from
+   the hand to the seat instead of simply lighting up. */
+function travelCard(button, value) {
+    if (reduceMotion || !button || typeof button.animate !== 'function') return;
+    const seat = document.getElementById('participant-' + myParticipantId);
+    if (!seat) return;
+    const from = button.getBoundingClientRect();
+    const to = seat.querySelector('.participant-card').getBoundingClientRect();
+    const ghost = document.createElement('div');
+    ghost.className = 'card-ghost';
+    ghost.textContent = value;
+    ghost.style.left = from.left + 'px';
+    ghost.style.top = from.top + 'px';
+    ghost.style.width = from.width + 'px';
+    ghost.style.height = from.height + 'px';
+    document.body.append(ghost);
+    const dx = to.left + (to.width - from.width) / 2 - from.left;
+    const dy = to.top + (to.height - from.height) / 2 - from.top;
+    const flight = ghost.animate([
+        { transform: 'translate(0, 0) rotate(0) scale(1)', opacity: 1 },
+        { transform: 'translate(' + dx * 0.5 + 'px, ' + (dy * 0.5 - 48) + 'px) rotate(-11deg) scale(0.94)', opacity: 1 },
+        { transform: 'translate(' + dx + 'px, ' + dy + 'px) rotate(0) scale(' + (to.width / from.width).toFixed(3) + ')', opacity: 0.25 }
+    ], { duration: 430, easing: 'cubic-bezier(.3,.7,.3,1)' });
+    /* Belt and braces: onfinish never runs if the frame clock is throttled (a
+       background tab, a renderer that is not compositing), and a ghost card left
+       on screen would sit above everything. */
+    const drop = () => ghost.remove();
+    flight.onfinish = drop;
+    flight.oncancel = drop;
+    window.setTimeout(drop, 900);
+}
+
+/* ---------------- sound ----------------
+   Five tones synthesised on the spot: nothing is downloaded, so this costs no
+   requests and no bytes. Off by default, one switch, remembered per browser. The
+   context is only created after a real click, because browsers refuse otherwise. */
+let soundOn = false;
+try { soundOn = localStorage.getItem('planning-pocket-sound') === 'on'; } catch (_) {}
+let audio = null;
+
+const TONES = {
+    card:      {kind: 'triangle', from: 320, to: 190, length: 0.11, gain: 0.16},
+    flip:      {kind: 'square',   from: 520, to: 700, length: 0.07, gain: 0.07},
+    throw:     {kind: 'sawtooth', from: 680, to: 240, length: 0.20, gain: 0.09},
+    splat:     {kind: 'triangle', from: 160, to: 60,  length: 0.16, gain: 0.20},
+    consensus: {chord: [523.25, 659.25, 783.99], length: 0.55, gain: 0.11}
+};
+
+function playTone(name) {
+    if (!soundOn) return;
+    const tone = TONES[name];
+    if (!tone) return;
+    try {
+        if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+        if (audio.state === 'suspended') audio.resume();
+        const now = audio.currentTime;
+        const voices = tone.chord || [null];
+        voices.forEach((frequency, index) => {
+            const oscillator = audio.createOscillator();
+            const level = audio.createGain();
+            const start = now + index * 0.07;
+            oscillator.type = tone.chord ? 'sine' : tone.kind;
+            if (tone.chord) {
+                oscillator.frequency.setValueAtTime(frequency, start);
+            } else {
+                oscillator.frequency.setValueAtTime(tone.from, start);
+                oscillator.frequency.exponentialRampToValueAtTime(tone.to, start + tone.length);
+            }
+            level.gain.setValueAtTime(tone.gain, start);
+            level.gain.exponentialRampToValueAtTime(0.0001, start + tone.length);
+            oscillator.connect(level).connect(audio.destination);
+            oscillator.start(start);
+            oscillator.stop(start + tone.length + 0.02);
+        });
+    } catch (_) {
+        /* No audio available: the room carries on in silence. */
+    }
+}
+
+function setSound(on) {
+    soundOn = on;
+    try { localStorage.setItem('planning-pocket-sound', on ? 'on' : 'off'); } catch (_) {}
+    const button = document.getElementById('sound-switch');
+    button.setAttribute('aria-pressed', String(on));
+    button.title = on ? 'Silenciar' : 'Activar sonido';
+    if (on) playTone('card');
+}
+
+/* ---------------- playful layer ----------------
+   Every throw is decided by the server. The client sends an intention, waits for
+   the broadcast, and only then animates, so a refused throw shows as a message
+   instead of an animation that never happened. */
+
+function syncThrowTargets() {
+    const enabled = allowPlayful;
+    document.querySelectorAll('.seat-avatar[data-throw-target]').forEach(button => {
+        button.disabled = !enabled;
+        const seat = button.closest('.table-seat');
+        const name = seat ? seat.querySelector('.seat-name').textContent.replace('Tú', '').trim() : '';
+        button.setAttribute('aria-label', 'Lanzar ' + (ITEM_LABELS[selectedItem] || 'algo').toLowerCase() + ' a ' + name);
+    });
+    const tray = document.getElementById('throw-tray');
+    if (tray) tray.hidden = !enabled;
+}
+
+function throwAt(targetId) {
+    if (!allowPlayful) return;
+    send('player.throw', {target_id: Number(targetId), item: selectedItem});
+}
+
+function seatCentre(participantId) {
+    const seat = document.getElementById('participant-' + participantId);
+    if (!seat) return null;
+    const avatar = seat.querySelector('.seat-avatar');
+    const stage = document.getElementById('table-stage').getBoundingClientRect();
+    const box = (avatar || seat).getBoundingClientRect();
+    return {
+        seat: seat,
+        x: box.left - stage.left + box.width / 2,
+        y: box.top - stage.top + box.height / 2
+    };
+}
+
+function markHit(target, item) {
+    playTone('splat');
+    target.seat.classList.remove('is-hit');
+    void target.seat.offsetWidth;
+    target.seat.classList.add('is-hit');
+    window.setTimeout(() => target.seat.classList.remove('is-hit'), 700);
+
+    const stage = document.getElementById('table-stage');
+    const decal = document.createElement('span');
+    decal.className = 'throw-decal';
+    decal.style.left = target.x + 'px';
+    decal.style.top = (target.y + 18) + 'px';
+    decal.style.color = 'var(--item-' + item + ')';
+    decal.style.transform = 'rotate(' + ((target.x * 7 + target.y * 13) % 360) + 'deg)';
+    decal.innerHTML = '<svg viewBox="0 0 40 40" aria-hidden="true"><use href="#item-splat"></use></svg>';
+    stage.append(decal);
+    requestAnimationFrame(() => decal.classList.add('is-fading'));
+    window.setTimeout(() => decal.remove(), 2600);
+    /* Keep the felt readable however busy the table gets. */
+    const decals = stage.querySelectorAll('.throw-decal');
+    if (decals.length > 12) decals[0].remove();
+
+    const label = document.createElement('span');
+    label.className = 'throw-label';
+    label.textContent = ITEM_LABELS[item] || '';
+    label.style.left = target.x + 'px';
+    label.style.top = (target.y - 34) + 'px';
+    stage.append(label);
+    window.setTimeout(() => label.remove(), 1700);
+}
+
+function playThrow(throwerId, targetId, item) {
+    const target = seatCentre(targetId);
+    if (!target) return;
+    if (!effectsOn) return;
+    const from = seatCentre(throwerId);
+    if (!from || reduceMotion || typeof requestAnimationFrame !== 'function') {
+        markHit(target, item);
+        return;
+    }
+
+    const stage = document.getElementById('table-stage');
+    const flying = stage.querySelectorAll('.throw-fly');
+    if (flying.length > 6) { markHit(target, item); return; }
+
+    playTone('throw');
+    const projectile = document.createElement('span');
+    projectile.className = 'throw-fly';
+    projectile.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#item-' + item + '"></use></svg>';
+    stage.append(projectile);
+
+    const controlX = (from.x + target.x) / 2;
+    const controlY = Math.min(from.y, target.y) - 110;
+    const duration = 540;
+    const started = performance.now();
+    /* A hard deadline as well as the progress check: if the frame clock is
+       throttled the object must still land instead of hanging over the felt. */
+    const deadline = window.setTimeout(() => {
+        projectile.remove();
+        markHit(target, item);
+    }, duration + 400);
+
+    const step = now => {
+        const progress = Math.min(1, (now - started) / duration);
+        const rest = 1 - progress;
+        const x = rest * rest * from.x + 2 * rest * progress * controlX + progress * progress * target.x;
+        const y = rest * rest * from.y + 2 * rest * progress * controlY + progress * progress * target.y;
+        projectile.style.transform = 'translate(' + (x - 13) + 'px, ' + (y - 13) + 'px) rotate(' + (progress * 540) + 'deg)';
+        if (progress < 1) { requestAnimationFrame(step); return; }
+        window.clearTimeout(deadline);
+        projectile.remove();
+        markHit(target, item);
+    };
+    requestAnimationFrame(step);
+}
+
+function setEffects(on) {
+    effectsOn = on;
+    try { localStorage.setItem('planning-pocket-effects', on ? 'on' : 'off'); } catch (_) {}
+    const button = document.getElementById('effects-switch');
+    button.setAttribute('aria-pressed', String(on));
+    button.title = on ? 'Desactivar efectos en tu pantalla' : 'Activar efectos en tu pantalla';
+}
+
+/* ---------------- recess ----------------
+   A walker per person over the felt. Coordinates are normalised 0..1 so screens of
+   different sizes agree, positions are relayed and never stored, and the layer
+   closes itself on reveal. Voting keeps working throughout: the hand of cards is
+   outside this layer and never covered. */
+
+function recessBox() {
+    return document.getElementById('recess-layer').getBoundingClientRect();
+}
+
+function seatNormalised(seat) {
+    const stage = recessBox();
+    const box = seat.getBoundingClientRect();
+    if (!stage.width || !stage.height) return {x: 0.5, y: 0.5};
+    return {
+        x: Math.min(0.95, Math.max(0.05, (box.left - stage.left + box.width / 2) / stage.width)),
+        y: Math.min(0.9, Math.max(0.1, (box.top - stage.top + box.height / 2) / stage.height))
+    };
+}
+
+function buildRecess() {
+    const layer = document.getElementById('recess-layer');
+    layer.querySelectorAll('.recess-spot, .recess-walker').forEach(node => node.remove());
+    walkers.clear();
+
+    RECESS_SPOTS.forEach(spot => {
+        const node = document.createElement('div');
+        node.className = 'recess-spot';
+        node.dataset.spot = spot.slug;
+        node.style.left = (spot.x * 100) + '%';
+        node.style.top = (spot.y * 100) + '%';
+        node.innerHTML = '<span class="spot-glyph" aria-hidden="true"><svg viewBox="0 0 24 24">' +
+            '<use href="#spot-' + spot.slug + '"></use></svg></span><b>' + spot.label + '</b>';
+        layer.append(node);
+    });
+
+    seatList().forEach(seat => {
+        const id = Number(seat.dataset.participantId);
+        const home = seatNormalised(seat);
+        const node = document.createElement('div');
+        const isMe = id === myParticipantId;
+        node.className = 'recess-walker' + (isMe ? ' is-me' : '');
+        node.style.setProperty('--seat-hue', seat.style.getPropertyValue('--seat-hue'));
+        const faceHref = seat.querySelector('.seat-avatar use').getAttribute('href');
+        node.innerHTML =
+            '<span class="walker-body" aria-hidden="true">' +
+                '<svg viewBox="0 0 30 22"><use href="' + faceHref + '"></use></svg>' +
+                '<svg class="walker-mug" viewBox="0 0 24 24"><use href="#walker-mug"></use></svg>' +
+                '<span class="walker-wave">¡Hola!</span>' +
+            '</span><b>' + seat.querySelector('.seat-name').textContent.replace('Tú', '').trim() + '</b>';
+        layer.append(node);
+        walkers.set(id, {node: node, home: home, x: home.x, y: home.y, tx: home.x, ty: home.y, isMe: isMe});
+    });
+    drawWalkers();
+}
+
+/* Transform, not left/top: moving eight walkers with layout properties triggers a
+   reflow every frame. The box is read once per pass, not once per walker. */
+function drawWalkers() {
+    const box = recessBox();
+    if (!box.width || !box.height) return;
+    walkers.forEach(walker => {
+        walker.node.style.transform =
+            'translate(' + (walker.x * box.width) + 'px, ' + (walker.y * box.height) + 'px)';
+    });
+}
+
+/* One shared loop for everyone: my own walker follows where I clicked, everyone
+   else follows the last position their client relayed. */
+function stepRecess() {
+    let moving = false;
+    walkers.forEach(walker => {
+        const dx = walker.tx - walker.x;
+        const dy = walker.ty - walker.y;
+        const distance = Math.hypot(dx, dy);
+        const isWalking = distance > 0.004;
+        if (isWalking) {
+            const speed = Math.min(0.014, distance);
+            walker.x += (dx / distance) * speed;
+            walker.y += (dy / distance) * speed;
+            moving = true;
+        }
+        walker.node.classList.toggle('is-walking', isWalking && !reduceMotion);
+    });
+    drawWalkers();
+    updateProximity();
+    if (recessOpen || moving) {
+        walkerFrame = requestAnimationFrame(stepRecess);
+    } else {
+        walkerFrame = null;
+        closeRecessLayer();
+    }
+}
+
+function updateProximity() {
+    const me = walkers.get(myParticipantId);
+    if (!me) return;
+    let nearCoffee = false;
+    RECESS_SPOTS.forEach(spot => {
+        const node = document.querySelector('.recess-spot[data-spot="' + spot.slug + '"]');
+        if (!node) return;
+        const near = Math.hypot(me.x - spot.x, me.y - spot.y) < 0.09;
+        node.classList.toggle('is-near', near);
+        if (near && spot.coffee) nearCoffee = true;
+    });
+    me.node.classList.toggle('has-coffee', nearCoffee);
+
+    /* Standing at the coffee machine is a social signal, written as text like every
+       other state. The server never treats it as one: you are still in the round. */
+    const state = document.getElementById('state-status-' + myParticipantId);
+    if (state) {
+        if (nearCoffee && state.textContent !== 'En pausa') {
+            state.dataset.beforeRecess = state.dataset.beforeRecess || state.textContent;
+            state.textContent = 'En pausa';
+        } else if (!nearCoffee && state.dataset.beforeRecess) {
+            state.textContent = state.dataset.beforeRecess;
+            delete state.dataset.beforeRecess;
+        }
+    }
+
+    walkers.forEach((walker, id) => {
+        if (id === myParticipantId) return;
+        walker.node.classList.toggle('is-greeting', Math.hypot(me.x - walker.x, me.y - walker.y) < 0.1);
+    });
+}
+
+function moveMeTo(x, y) {
+    const me = walkers.get(myParticipantId);
+    if (!me || !recessOpen) return;
+    me.tx = Math.min(0.96, Math.max(0.04, x));
+    me.ty = Math.min(0.92, Math.max(0.08, y));
+    /* Eight a second is plenty for a walking avatar, and the server drops anything
+       faster rather than queueing it. */
+    const now = Date.now();
+    if (now - lastMoveSent >= 125) {
+        lastMoveSent = now;
+        send('player.move', {x: Number(me.tx.toFixed(4)), y: Number(me.ty.toFixed(4))});
+    }
+}
+
+function openRecess() {
+    const stage = document.getElementById('table-stage');
+    stage.classList.add('is-recess');
+    buildRecess();
+    if (!walkerFrame) walkerFrame = requestAnimationFrame(stepRecess);
+}
+
+/* Everyone walks home first; the layer only disappears once they have arrived, so
+   the reveal choreography starts from a table that is actually seated. */
+function closeRecess() {
+    if (!document.getElementById('table-stage').classList.contains('is-recess')) return;
+    walkers.forEach(walker => { walker.tx = walker.home.x; walker.ty = walker.home.y; });
+    const state = document.getElementById('state-status-' + myParticipantId);
+    if (state && state.dataset.beforeRecess) {
+        state.textContent = state.dataset.beforeRecess;
+        delete state.dataset.beforeRecess;
+    }
+    if (reduceMotion || !walkerFrame) { closeRecessLayer(); return; }
+    /* The walk home is driven by the frame clock, so it also gets a deadline: a
+       throttled tab must not be left with the recess layer over the table. */
+    window.setTimeout(closeRecessLayer, 1400);
+}
+
+function closeRecessLayer() {
+    const stage = document.getElementById('table-stage');
+    stage.classList.remove('is-recess');
+    const layer = document.getElementById('recess-layer');
+    layer.querySelectorAll('.recess-spot, .recess-walker').forEach(node => node.remove());
+    walkers.clear();
+    if (walkerFrame) { cancelAnimationFrame(walkerFrame); walkerFrame = null; }
+}
+
+function applyRecess(isOpen) {
+    recessOpen = isOpen;
+    const switcher = document.getElementById('recess-switch');
+    if (switcher) switcher.setAttribute('aria-pressed', String(isOpen));
+    if (isOpen) openRecess(); else closeRecess();
+}
+
+function countdown(done) {
+    const counter = document.getElementById('table-count');
+    let remaining = 3;
+    const tick = () => {
+        counter.textContent = String(remaining);
+        counter.classList.remove('is-ticking');
+        void counter.offsetWidth;
+        counter.classList.add('is-ticking');
+        remaining -= 1;
+        window.setTimeout(remaining > 0 ? tick : () => { counter.textContent = ''; done(); }, 430);
+    };
+    tick();
+}
+
+/* Reveal choreography: a countdown so the last vote still fits, then the cards
+   turn one after another around the ring, then the result lands. */
+function playReveal(participants, results) {
+    votingStatus = 'revealed';
+    document.querySelectorAll('.poker-card').forEach(card => { card.disabled = true; });
+    const seats = seatList();
+    const byId = new Map(participants.map(p => [p.id, p]));
+    const turn = () => {
+        seats.forEach(seat => {
+            const slot = Number(seat.style.getPropertyValue('--seat-index') || 0);
+            const participant = byId.get(Number(seat.dataset.participantId));
+            window.setTimeout(() => {
+                if (participant) renderParticipant(participant);
+                else seat.classList.add('is-revealed');
+                playTone('flip');
+            }, reduceMotion ? 0 : slot * STAGGER);
+        });
+        window.setTimeout(() => {
+            setResults(results, participants);
+            updateControls(currentIssue);
+            const label = document.getElementById('round-label');
+            if (label) label.textContent = 'Votos revelados';
+            const status = document.querySelector('.round-status');
+            if (status) status.classList.add('is-revealed');
+            if (results && results.has_consensus) playTone('consensus');
+            if (results && results.has_consensus && !reduceMotion) {
+                const stage = document.getElementById('table-stage');
+                stage.classList.remove('is-consensus');
+                void stage.offsetWidth;
+                stage.classList.add('is-consensus');
+                window.setTimeout(() => stage.classList.remove('is-consensus'), 2000);
+            }
+        }, reduceMotion ? 0 : seats.length * STAGGER + 420);
+    };
+    if (reduceMotion) turn(); else countdown(turn);
+}
+
+function connect() {
+    ws = new WebSocket(wsUrl);
+    const status = document.getElementById('ws-status');
+    ws.onopen = () => { status.classList.add('is-live'); status.title = 'Conectado'; status.querySelector('.connection-label').textContent = 'En vivo'; };
+    ws.onmessage = event => {
+        const data = JSON.parse(event.data);
+        if (data.type === 'room.state') {
+            votingStatus = data.payload.room.voting_status;
+            currentIssue = data.payload.active_issue;
+            allowPlayful = data.payload.room.allow_playful_actions;
+            deckExpanded = data.payload.room.deck_expanded;
+            if (deckSwitch) deckSwitch.setAttribute('aria-pressed', String(deckExpanded));
+            const recessWas = recessOpen;
+            recessOpen = data.payload.room.recess_open;
+            data.payload.participants.forEach(renderParticipant);
+            layoutSeats();
+            myCurrentVote = data.payload.your_vote;
+            confirmedVote = myCurrentVote;
+            syncSelectedCard();
+            renderActiveIssue(data.payload.active_issue);
+            setResults(data.payload.results, data.payload.participants);
+            updateControls(data.payload.active_issue);
+            syncThrowTargets();
+            if (recessOpen !== recessWas || (recessOpen && !walkers.size)) applyRecess(recessOpen);
+        } else if (data.type === 'participant.joined') {
+            renderParticipant(data.participant);
+        } else if (data.type === 'participant.left') {
+            const seat = document.getElementById('participant-' + data.participant_id);
+            if (seat) { seat.classList.add('is-offline'); seat.querySelector('.seat-state').textContent = 'Ausente'; }
+        } else if (data.type === 'participant.voted') {
+            if (data.participant_id === myParticipantId) confirmedVote = data.has_voted ? myCurrentVote : null;
+            const seat = document.getElementById('participant-' + data.participant_id);
+            if (seat) renderParticipant({id: data.participant_id, has_voted: data.has_voted, is_online: true, current_vote: null});
+        } else if (data.type === 'participant.reminded') {
+            const seat = document.getElementById('participant-' + data.participant_id);
+            if (seat) { seat.classList.remove('is-reminded'); void seat.offsetWidth; seat.classList.add('is-reminded'); }
+        } else if (data.type === 'participant.removed') {
+            if (data.participant_id === myParticipantId) {
+                /* El servidor ya cerró este socket. Marcarlo evita que onclose
+                   intente reconectar contra una sala de la que ya no formo parte. */
+                wasRemoved = true;
+                window.location.reload();
+                return;
+            }
+            const seat = document.getElementById('participant-' + data.participant_id);
+            if (seat) { seat.remove(); layoutSeats(); syncTableMarks(); syncThrowTargets(); }
+            walkers.delete(data.participant_id);
+        } else if (data.type === 'room.deck_changed') {
+            deckExpanded = data.expanded;
+            if (deckSwitch) deckSwitch.setAttribute('aria-pressed', String(deckExpanded));
+            if (data.cleared_participant_ids.includes(myParticipantId)) {
+                myCurrentVote = null;
+                showToast('Tu carta ya no está en la baraja: vuelve a votar.', true);
+            }
+            renderDeck(data.deck);
+            data.cleared_participant_ids.forEach(id => {
+                const seat = document.getElementById('participant-' + id);
+                if (seat) renderParticipant({id, has_voted: false, is_online: !seat.classList.contains('is-offline'), current_vote: null});
+            });
+        } else if (data.type === 'participant.updated') {
+            renderParticipant(data.participant);
+        } else if (data.type === 'player.moved') {
+            const walker = walkers.get(data.participant_id);
+            if (walker && data.participant_id !== myParticipantId) {
+                walker.tx = data.x;
+                walker.ty = data.y;
+            }
+        } else if (data.type === 'room.recess_changed') {
+            applyRecess(data.recess_open);
+        } else if (data.type === 'player.hit') {
+            playThrow(data.thrower_id, data.target_id, data.item);
+        } else if (data.type === 'room.playful_changed') {
+            allowPlayful = data.allow_playful_actions;
+            const switcher = document.getElementById('playful-switch');
+            if (switcher) switcher.setAttribute('aria-pressed', String(allowPlayful));
+            syncThrowTargets();
+        } else if (data.type === 'room.revealed') {
+            playReveal(data.participants, data.results);
+        } else if (data.type === 'room.resetted') {
+            votingStatus = 'voting';
+            document.getElementById('table-stage').classList.remove('is-consensus');
+            document.getElementById('table-count').textContent = '';
+            document.querySelectorAll('.table-seat').forEach(seat => renderParticipant({id: Number(seat.dataset.participantId), has_voted: false, is_online: !seat.classList.contains('is-offline'), current_vote: null}));
+            document.querySelectorAll('.poker-card').forEach(card => { card.classList.remove('selected'); card.setAttribute('aria-pressed', 'false'); });
+            myCurrentVote = null;
+            setResults(null);
+            const label = document.getElementById('round-label');
+            if (label) label.textContent = currentIssue ? 'Votación abierta' : 'Estimación libre';
+            const status = document.querySelector('.round-status');
+            if (status) status.classList.remove('is-revealed');
+            updateControls(currentIssue);
+        } else if (data.type === 'issue.activated') {
+            currentIssue = data.issue;
+            renderActiveIssue(data.issue);
+            document.querySelectorAll('.room-issue').forEach(item => item.classList.toggle('is-active', Number(item.dataset.issueId) === data.issue.id));
+            updateControls(data.issue);
+        } else if (data.type === 'issue.finished') {
+            currentIssue = null;
+            renderActiveIssue(null);
+            updateControls(false);
+        } else if (data.type === 'room.closed') {
+            /* El facilitador cerró la sala. Recargar deja que la vista decida qué ve
+               cada uno: él sigue viéndola, el resto encuentra la puerta. */
+            showToast('El facilitador cerró esta sala.', true);
+            wasRemoved = true;
+            window.setTimeout(() => window.location.reload(), 1500);
+        } else if (data.type === 'error') {
+            if (myCurrentVote !== confirmedVote) { myCurrentVote = confirmedVote; syncSelectedCard(); }
+            showToast(data.message || 'No se pudo completar la acción.', true);
+        }
+    };
+    ws.onclose = event => {
+        status.classList.remove('is-live');
+        /* 4403 es «este socket no te corresponde»: lo manda el consumer cuando ya
+           no estás en la mesa. Reintentar sería golpear la puerta cada dos segundos. */
+        if (wasRemoved || event.code === 4403) {
+            status.title = 'Fuera de la sala';
+            status.querySelector('.connection-label').textContent = 'Fuera de la sala';
+            return;
+        }
+        status.title = 'Reconectando';
+        status.querySelector('.connection-label').textContent = 'Reconectando';
+        window.setTimeout(connect, 2000);
+    };
+}
+
+function send(type, payload = {}) { if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({type, ...payload})); }
+function castVote(value, button) {
+    if (button.disabled) return;
+    const next = myCurrentVote === value ? null : value;
+    myCurrentVote = next;
+    syncSelectedCard();
+    if (next !== null) { travelCard(button, value); playTone('card'); }
+    send('vote.cast', {value: next});
+}
+function revealRoom() { send('room.reveal'); }
+function resetRoom() { send('room.reset'); }
+function activateIssue(issueId) { send('issue.activate', {issue_id: issueId}); }
+function remindParticipant(participantId) { send('participant.remind', {participant_id: participantId}); }
+/* Expulsar no se deshace desde aquí, así que se pregunta. El servidor vuelve a
+   comprobar quién lo pidió: esta confirmación evita el resbalón, no el abuso. */
+function removeParticipant(participantId, displayName) {
+    const ok = window.confirm(
+        '¿Expulsar a ' + displayName + ' de la sala?\n\n' +
+        'Saldrá de la mesa y este enlace dejará de funcionar para esa persona.'
+    );
+    if (ok) send('participant.remove', {participant_id: participantId});
+}
+function finishIssue() {
+    const input = document.getElementById('final-result-input');
+    if (input.value) { send('issue.finish', {final_result: input.value}); input.value = ''; }
+}
+/* One delegated listener for the seats, so it keeps working for seats that arrive
+   over the WebSocket. */
+document.getElementById('participants-list').addEventListener('click', event => {
+    const aim = event.target.closest('.seat-avatar[data-throw-target]');
+    if (aim && !aim.disabled) { throwAt(aim.dataset.throwTarget); return; }
+    const remind = event.target.closest('.seat-reminder[data-remind]');
+    if (remind) { remindParticipant(Number(remind.dataset.remind)); return; }
+    const remove = event.target.closest('.seat-remove[data-remove]');
+    if (remove) removeParticipant(Number(remove.dataset.remove), remove.dataset.name || '');
+});
+
+/* Delegado también aquí: la lista de historias se redibuja, y las cartas se vuelven a
+   repartir enteras cuando cambia la baraja. */
+document.getElementById('room-issues').addEventListener('click', event => {
+    const button = event.target.closest('.issue-activate[data-activate-issue]');
+    if (button) activateIssue(Number(button.dataset.activateIssue));
+});
+document.getElementById('deck').addEventListener('click', event => {
+    const card = event.target.closest('.poker-card');
+    if (card && !card.disabled) castVote(card.dataset.card, card);
+});
+
+[['reveal-button', revealRoom], ['reset-button', resetRoom],
+ ['finish-issue-button', finishIssue]].forEach(([id, accion]) => {
+    const button = document.getElementById(id);
+    if (button) button.addEventListener('click', accion);
+});
+
+/* Left and right move between faces around the table, on top of plain Tab. */
+document.getElementById('participants-list').addEventListener('keydown', event => {
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+    const buttons = Array.from(document.querySelectorAll('.seat-avatar[data-throw-target]:not(:disabled)'));
+    const here = buttons.indexOf(document.activeElement);
+    if (here < 0 || buttons.length < 2) return;
+    event.preventDefault();
+    const next = (here + (event.key === 'ArrowRight' ? 1 : -1) + buttons.length) % buttons.length;
+    buttons[next].focus();
+});
+
+document.getElementById('throw-tray').addEventListener('click', event => {
+    const button = event.target.closest('.throw-item');
+    if (!button) return;
+    selectedItem = button.dataset.item;
+    document.querySelectorAll('.throw-item').forEach(item => {
+        item.setAttribute('aria-pressed', String(item === button));
+    });
+    syncThrowTargets();
+});
+
+document.getElementById('effects-switch').addEventListener('click', () => setEffects(!effectsOn));
+document.getElementById('sound-switch').addEventListener('click', () => setSound(!soundOn));
+
+document.getElementById('character-panel').addEventListener('change', event => {
+    if (event.target.name === 'room-pet') {
+        send('participant.set_identity', {pet: event.target.value});
+    } else if (event.target.name === 'room-color') {
+        send('participant.set_identity', {color_index: Number(event.target.value)});
+    }
+});
+
+document.getElementById('recess-floor').addEventListener('click', event => {
+    const box = recessBox();
+    if (!box.width || !box.height) return;
+    moveMeTo((event.clientX - box.left) / box.width, (event.clientY - box.top) / box.height);
+    document.getElementById('recess-floor').focus();
+});
+
+document.getElementById('recess-floor').addEventListener('keydown', event => {
+    const nudge = {ArrowLeft: [-0.06, 0], ArrowRight: [0.06, 0], ArrowUp: [0, -0.08], ArrowDown: [0, 0.08]}[event.key];
+    if (!nudge) return;
+    const me = walkers.get(myParticipantId);
+    if (!me) return;
+    event.preventDefault();
+    moveMeTo(me.tx + nudge[0], me.ty + nudge[1]);
+});
+
+const recessSwitch = document.getElementById('recess-switch');
+if (recessSwitch) {
+    recessSwitch.addEventListener('click', () => send('room.set_recess', {enabled: !recessOpen}));
+    recessSwitch.title = 'Abrir o cerrar el recreo para toda la sala';
+}
+
+const deckSwitch = document.getElementById('deck-switch');
+if (deckSwitch) {
+    deckSwitch.addEventListener('click', () => send('room.set_deck', {expanded: !deckExpanded}));
+}
+
+const playfulSwitch = document.getElementById('playful-switch');
+if (playfulSwitch) {
+    playfulSwitch.addEventListener('click', () => {
+        send('room.set_playful', {enabled: !allowPlayful});
+    });
+    playfulSwitch.title = 'Activar o desactivar el juego para toda la sala';
+}
+
+document.getElementById('share-room').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(window.location.href); showToast('Enlace copiado'); } catch { showToast('Copia el enlace desde la barra del navegador.', true); }
+});
+/* En el teléfono la baraja va anclada al borde inferior. Su altura cambia con la
+   bandeja de objetos y con el tamaño de la pantalla, así que se mide y se le
+   cuenta al CSS: reservar un hueco fijo deja la última historia tapada o un
+   vacío debajo de la mesa, según el caso. */
+const deckDock = document.getElementById('room-deck-wrap');
+function syncDeckDock() {
+    const docked = getComputedStyle(deckDock).position === 'fixed';
+    document.documentElement.style.setProperty(
+        '--deck-dock-height',
+        docked ? Math.ceil(deckDock.getBoundingClientRect().height) + 'px' : '0px'
+    );
+}
+if (window.ResizeObserver) new ResizeObserver(syncDeckDock).observe(deckDock);
+window.addEventListener('resize', syncDeckDock);
+
+layoutSeats();
+syncTableMarks();
+setEffects(effectsOn);
+setSound(soundOn);
+syncThrowTargets();
+syncDeckDock();
+connect();
+</script>
+{% endblock %}

@@ -1,0 +1,978 @@
+/* KronPlan (BLANDSKRON) visual system — tokens semánticos, claro/oscuro y responsive.
+
+   Los tokens de marca se traducen una sola vez a los nombres semánticos que
+   consumen los componentes (`--surface`, `--accent`, `--felt`…), para que el
+   tema pueda evolucionar en un solo sitio sin reescribir la hoja. */
+:root {
+  color-scheme: light;
+  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: Manrope, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+
+  --bg: #f3f2fb;
+  --bg-soft: #eae7f8;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-hover: #f4f1fd;
+  --surface-inset: #f1eefb;
+  --text: #16103a;
+  --text-soft: #3b3470;
+  --muted: #6c6799;
+  --border: #e2def3;
+  --border-strong: #c2bbe6;
+
+  /* El rosa es la única acción del sistema: botón, enlace, carta elegida.
+     `--brand` es el rosa de marca sin compromisos y sólo decora (brillos, bordes,
+     reversos); `--accent` es el que lleva texto encima y por eso está rebajado
+     hasta pasar AA sobre blanco. */
+  --brand: #ed117b;
+  --brand-bright: #ff4da3;
+  --primary: #c7005f;
+  --primary-hover: #a30450;
+  --primary-soft: #fde3ef;
+  --primary-contrast: #ffffff;
+  --accent: #c7005f;
+  --accent-hover: #a30450;
+  --accent-soft: #fde3ef;
+  --accent-contrast: #ffffff;
+  --success: #0a6549;
+  --success-soft: #ddf4ec;
+  --warning: #8a5a05;
+  --warning-soft: #fcefd6;
+  --danger: #bd2949;
+  --danger-soft: #fbe3e8;
+
+  /* El paño es oscuro en los dos temas: los asientos siempre caen sobre
+     él, así que su paleta no tiene que cambiar con el tema. */
+  --felt: #4a2a7d;
+  --felt-deep: #251456;
+  --felt-line: rgba(255, 255, 255, 0.18);
+  --felt-text: rgba(255, 255, 255, 0.66);
+  --card-face: #fdf7fb;
+  --card-ink: #1a1040;
+
+  --shadow-xs: 0 1px 2px rgba(22, 16, 58, 0.07);
+  --shadow-sm: 0 6px 18px rgba(22, 16, 58, 0.08);
+  --shadow-md: 0 20px 44px rgba(22, 16, 58, 0.13);
+  --shadow-lg: 0 26px 54px rgba(22, 16, 58, 0.18);
+  --ring: 0 0 0 3px rgba(237, 17, 123, 0.22);
+  --focus: #c7005f;
+
+  /* Radios del sistema: control 14, tarjeta 22, panel 28. */
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+  --radius-xl: 28px;
+  --radius-pill: 999px;
+  --content: 1180px;
+  --header-height: 76px;
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --dur-fast: 0.18s;
+  --dur-mid: 0.35s;
+
+  /* El campo de la página. Un solo token para que header, pie y barra inferior
+     puedan teñirse del mismo degradado en lugar de adivinar un color plano. */
+  --page-backdrop:
+    radial-gradient(900px 520px at 8% -8%, rgba(237, 17, 123, 0.10), transparent 62%),
+    radial-gradient(780px 460px at 94% 2%, rgba(99, 33, 126, 0.12), transparent 60%),
+    linear-gradient(170deg, #f6f4fd 0%, #f1effb 52%, #f7eef6 100%);
+  --chrome: rgba(255, 255, 255, 0.78);
+
+  /* Stage layers. Declared once so anything added to the table stacks
+     predictably instead of guessing a z-index. */
+  --z-felt: 1;
+  --z-marks: 2;
+  --z-decal: 3;
+  --z-pets: 4;
+  --z-seats: 5;
+  --z-fly: 6;
+  --z-stage-ui: 7;
+
+  /* Seat palette. Shared by both themes because seats always sit on the felt,
+     which is dark either way. Indexes match rooms/identity.COLOR_COUNT. */
+  --seat-hue-0: #ff8fc3;
+  --seat-hue-1: #5ee0c0;
+  --seat-hue-2: #fbbf24;
+  --seat-hue-3: #7aa7ff;
+  --seat-hue-4: #ff9a7b;
+  --seat-hue-5: #b79bff;
+  --seat-hue-6: #4fd1e9;
+
+  /* Throwable objects. The colour is only used for the mark left on the felt. */
+  --item-tomate: #e0455c;
+  --item-papel: #e4def2;
+  --item-cafe: #a2704a;
+  --item-almohada: #8fb3e8;
+  --item-sello: #34d399;
+  --item-zapatilla: #7c7fb8;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #1a1a56;
+  --bg-soft: #221c5c;
+  --surface: rgba(255, 255, 255, 0.06);
+  --surface-raised: rgba(255, 255, 255, 0.09);
+  --surface-hover: rgba(255, 255, 255, 0.13);
+  --surface-inset: rgba(5, 10, 42, 0.42);
+  --text: #ffffff;
+  --text-soft: rgba(255, 255, 255, 0.72);
+  --muted: rgba(255, 255, 255, 0.58);
+  --border: rgba(255, 255, 255, 0.14);
+  --border-strong: rgba(255, 255, 255, 0.3);
+
+  /* El rosa de acción aquí es claro, no el de marca: sobre las superficies
+     translúcidas del tema oscuro, #ff6cb2 se quedaba en 4,47:1 y no llegaba a
+     AA. Y `--accent-soft` es una pastilla de ciruela opaca en vez de un velo
+     rosa, porque un velo sobre el paño sube el fondo y hunde el contraste del
+     texto que lleva encima. */
+  --primary: #ff80bd;
+  --primary-hover: #ffa3d1;
+  --primary-soft: rgba(125, 10, 65, 0.55);
+  --primary-contrast: #2b0010;
+  --accent: #ff80bd;
+  --accent-hover: #ffa3d1;
+  --accent-soft: rgba(125, 10, 65, 0.55);
+  --accent-contrast: #2b0010;
+  --success: #5ee0c0;
+  --success-soft: rgba(52, 211, 153, 0.16);
+  --warning: #fbbf24;
+  --warning-soft: rgba(251, 191, 36, 0.16);
+  --danger: #fb7185;
+  --danger-soft: rgba(251, 113, 133, 0.16);
+
+  --felt: #3b246f;
+  --felt-deep: #1b1150;
+  --felt-line: rgba(255, 255, 255, 0.16);
+  --felt-text: rgba(255, 255, 255, 0.62);
+  --card-face: #f6eef5;
+  --card-ink: #1a1040;
+
+  --shadow-xs: 0 1px 2px rgba(3, 2, 16, 0.4);
+  --shadow-sm: 0 10px 26px rgba(6, 4, 26, 0.34);
+  --shadow-md: 0 20px 44px rgba(6, 4, 26, 0.42);
+  --shadow-lg: 0 26px 54px rgba(6, 4, 26, 0.52);
+  --ring: 0 0 0 3px rgba(255, 77, 163, 0.32);
+  --focus: #ff4da3;
+
+  --page-backdrop:
+    radial-gradient(1100px 600px at 10% -12%, rgba(237, 17, 123, 0.20), transparent 62%),
+    radial-gradient(900px 520px at 92% 0%, rgba(123, 39, 141, 0.38), transparent 64%),
+    linear-gradient(168deg, #202b70 0%, #23275f 40%, #302665 68%, #2b0d33 100%);
+  --chrome: rgba(16, 18, 62, 0.72);
+}
+
+* { box-sizing: border-box; }
+html { min-width: 320px; scroll-behavior: smooth; background: var(--bg); }
+body {
+  /* 100dvh, no 100vh: en un navegador móvil la barra de direcciones se recoge al
+     hacer scroll y con 100vh la carcasa queda siempre un poco más alta que la
+     pantalla, que es justo lo que delata que no es una app. */
+  min-height: 100dvh;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  color: var(--text);
+  background: var(--page-backdrop) var(--bg) fixed;
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button, input, textarea, select { font: inherit; }
+button, a { -webkit-tap-highlight-color: transparent; }
+a { color: var(--primary); text-underline-offset: 0.18em; }
+img, svg { display: block; max-width: 100%; }
+h1, h2, h3, p { margin-top: 0; }
+h1, h2, h3 { color: var(--text); font-family: var(--font-display); line-height: 1.1; letter-spacing: -0.035em; }
+h1 { font-size: clamp(2rem, 5vw, 3.6rem); font-weight: 800; }
+h2 { font-size: clamp(1.45rem, 3vw, 2.1rem); font-weight: 700; letter-spacing: -0.025em; }
+h3 { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.02em; }
+[hidden] { display: none !important; }
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+  box-shadow: var(--ring);
+}
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+.skip-link {
+  position: fixed; top: 0.75rem; left: 0.75rem; z-index: 200;
+  padding: 0.7rem 1rem; border-radius: var(--radius-sm);
+  color: var(--primary-contrast); background: var(--primary); font-weight: 750;
+  transform: translateY(-150%); transition: transform 0.15s ease;
+}
+.skip-link:focus { transform: translateY(0); }
+
+/* App chrome */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  min-height: var(--header-height);
+  padding: 0.75rem max(1rem, calc((100vw - var(--content)) / 2));
+  padding-top: max(0.75rem, env(safe-area-inset-top));
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--chrome);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+}
+.site-brand { display: inline-flex; align-items: center; gap: 0.7rem; min-width: 0; color: var(--text); text-decoration: none; }
+/* Insignia de marca: un disco radial con resplandor, no un cuadrado plano. */
+.brand-mark {
+  position: relative; display: grid; place-items: center; flex: 0 0 42px; width: 42px; height: 42px;
+  border-radius: 50%; color: #ffffff;
+  background: radial-gradient(circle at 50% 32%, var(--brand-bright) 0%, var(--brand) 46%, #7d0a41 100%);
+  box-shadow: 0 0 20px 4px rgba(237, 17, 123, 0.34), inset 0 -8px 16px rgba(0, 0, 0, 0.28), inset 0 6px 14px rgba(255, 255, 255, 0.16);
+}
+.brand-mark::after { content: ''; position: absolute; inset: -3px; border: 1px solid rgba(237, 17, 123, 0.5); border-radius: 50%; }
+.brand-mark span { z-index: 1; font-family: var(--font-display); font-size: 1.05rem; font-weight: 800; }
+.brand-copy { display: grid; min-width: 0; line-height: 1.1; }
+.brand-copy strong { font-family: var(--font-display); font-size: 1rem; font-weight: 800; letter-spacing: -0.03em; }
+.brand-copy small { margin-top: 0.26rem; color: var(--muted); font-size: 0.66rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; }
+.site-nav { display: flex; align-items: center; justify-content: flex-end; gap: 0.35rem; }
+.nav-link { min-height: 44px; padding: 0.65rem 0.9rem; display: inline-flex; align-items: center; border-radius: var(--radius-pill); color: var(--text-soft); font-size: 0.86rem; font-weight: 700; text-decoration: none; transition: color var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease); }
+.nav-link:hover { color: var(--text); background: var(--surface-hover); }
+.nav-form { display: flex; margin: 0; }
+.nav-button { border: 0; cursor: pointer; background: transparent; }
+.user-chip { height: 40px; padding: 0.25rem 0.75rem 0.25rem 0.25rem; display: inline-flex; align-items: center; gap: 0.45rem; border: 1px solid var(--border); border-radius: var(--radius-pill); background: var(--surface); }
+.user-avatar { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; color: #ffffff; background: linear-gradient(160deg, var(--brand-bright), var(--brand)); font-size: 0.72rem; font-weight: 800; }
+.user-name { max-width: 120px; overflow: hidden; text-overflow: ellipsis; color: var(--text-soft); font-size: 0.8rem; font-weight: 700; white-space: nowrap; }
+.icon-button {
+  width: 44px; height: 44px; padding: 0; display: grid; place-items: center;
+  border: 1px solid var(--border); border-radius: 50%; color: var(--text-soft); background: var(--surface); cursor: pointer;
+  transition: color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
+}
+.icon-button:hover { color: var(--text); border-color: var(--border-strong); background: var(--surface-hover); }
+.theme-icon { grid-area: 1 / 1; width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transition: opacity 0.15s, transform 0.2s; }
+:root[data-theme="light"] .theme-icon-sun, :root[data-theme="dark"] .theme-icon-moon { opacity: 0; transform: scale(0.55) rotate(-40deg); }
+:root[data-theme="light"] .theme-icon-moon, :root[data-theme="dark"] .theme-icon-sun { opacity: 1; transform: scale(1) rotate(0); }
+
+.page-shell { width: min(100% - 2rem, var(--content)); flex: 1 0 auto; margin: 0 auto; padding: clamp(2rem, 5vw, 4.5rem) 0; }
+.room-shell { width: min(100% - 2rem, 1540px); padding-top: 1.25rem; }
+.narrow-shell { width: min(100% - 2rem, 980px); display: grid; align-items: center; }
+.auth-shell { width: min(100% - 2rem, 1080px); display: grid; align-items: center; }
+.site-footer { min-height: 74px; padding: 1.25rem; padding-bottom: max(1.25rem, env(safe-area-inset-bottom)); display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.6rem; color: var(--muted); font-size: 0.73rem; }
+.site-footer span:first-child { color: var(--text-soft); font-family: var(--font-display); font-weight: 800; }
+
+/* Common components. Sin botones rectangulares: la acción es una
+   píldora de acento y el resto son píldoras de contorno sobre la superficie. */
+.button, button.button {
+  min-height: 48px; padding: 0.78rem 1.4rem; display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem;
+  border: 1px solid transparent; border-radius: var(--radius-pill); box-shadow: none; cursor: pointer;
+  font-size: 0.88rem; font-weight: 750; line-height: 1.1; text-decoration: none;
+  transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+}
+.button-primary { color: var(--primary-contrast); background: var(--primary); box-shadow: 0 10px 24px rgba(237, 17, 123, 0.26); }
+.button-primary:hover { color: var(--primary-contrast); background: var(--primary-hover); box-shadow: 0 14px 30px rgba(237, 17, 123, 0.34); }
+.button-secondary { color: var(--text); border-color: var(--border-strong); background: var(--surface); }
+.button-secondary:hover { border-color: var(--accent); background: var(--surface-hover); }
+.button-danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 45%, var(--border)); background: var(--surface); }
+.button-danger:hover { background: var(--danger-soft); }
+.button-block { width: 100%; }
+.is-loading { cursor: progress; opacity: 0.72; }
+/* El marco de sección: versalitas muy espaciadas. */
+.eyebrow { display: block; margin-bottom: 0.7rem; color: var(--accent); font-size: 0.7rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; }
+/* El panel de marca es oscuro en los dos temas, así que su rótulo tampoco puede
+   salir de un token de tema ni del rosa de marca: `--brand-bright` sobre el
+   campo azul da 4,1:1. Este rosa es relativo al panel, como la tinta de la
+   carta lo es a la carta. */
+.eyebrow-light { color: #ff9ac9; }
+.back-link { min-height: 44px; margin: -0.5rem 0 1.4rem; display: inline-flex; align-items: center; color: var(--muted); font-size: 0.82rem; font-weight: 700; text-decoration: none; }
+.back-link:hover { color: var(--text); }
+
+/* Forms */
+.stack-form { display: grid; gap: 0.9rem; margin-top: 1.7rem; }
+.stack-form p { margin: 0; }
+label { display: block; margin-bottom: 0.4rem; color: var(--text-soft); font-size: 0.8rem; font-weight: 700; }
+input, textarea, select {
+  width: 100%; min-height: 50px; margin: 0; padding: 0.78rem 1rem;
+  border: 1px solid var(--border); border-radius: var(--radius-md); outline: 0;
+  color: var(--text); background: var(--surface-inset); caret-color: var(--accent);
+  transition: border-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
+}
+textarea { min-height: 84px; resize: vertical; }
+input::placeholder, textarea::placeholder { color: color-mix(in srgb, var(--muted) 82%, transparent); }
+input:focus, textarea:focus, select:focus { border-color: var(--brand-bright); background: var(--surface); box-shadow: var(--ring); }
+.helptext { display: block; margin-top: 0.4rem; color: var(--muted); font-size: 0.72rem; line-height: 1.45; }
+.helptext ul { margin: 0.35rem 0 0; padding-left: 1.1rem; }
+.errorlist { margin: 0 0 0.45rem; padding: 0.65rem 0.9rem; list-style: none; border: 1px solid color-mix(in srgb, var(--danger) 36%, transparent); border-radius: var(--radius-md); color: var(--danger); background: var(--danger-soft); font-size: 0.76rem; font-weight: 650; }
+
+/* Dashboard */
+.page-heading { margin-bottom: clamp(2rem, 6vw, 4.25rem); display: flex; align-items: flex-end; justify-content: space-between; gap: 2rem; }
+.page-heading h1 { margin-bottom: 0.55rem; }
+.page-heading p { max-width: 550px; margin-bottom: 0; color: var(--muted); }
+.room-collection { padding: clamp(1.1rem, 3vw, 2rem); border: 1px solid var(--border); border-radius: var(--radius-xl); background: var(--surface); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), var(--shadow-sm); }
+.section-heading { margin-bottom: 1.2rem; display: flex; align-items: center; justify-content: space-between; }
+.section-heading h2 { margin-bottom: 0.25rem; font-size: 1.15rem; }
+.section-heading p { margin: 0; color: var(--muted); font-size: 0.76rem; }
+.dashboard-room-grid { margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.8rem; list-style: none; }
+.dashboard-room-card { min-height: 132px; padding: 1.1rem; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 1rem; border: 1px solid var(--border); border-radius: var(--radius-lg); color: var(--text); background: var(--surface-raised); text-decoration: none; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07); transition: border-color var(--dur-fast) var(--ease), box-shadow var(--dur-mid) var(--ease), transform var(--dur-mid) var(--ease); }
+.dashboard-room-card:hover { border-color: color-mix(in srgb, var(--brand) 55%, var(--border)); box-shadow: var(--shadow-md), 0 0 0 1px rgba(237, 17, 123, 0.14); transform: translateY(-3px); }
+.mini-card-stack { position: relative; display: grid; place-items: center; width: 52px; height: 72px; border: 1px solid rgba(237, 17, 123, 0.45); border-radius: var(--radius-md); color: #ffffff; background: linear-gradient(170deg, var(--brand-bright), var(--brand) 55%, #7d0a41); box-shadow: 0 10px 22px rgba(237, 17, 123, 0.28); font-family: var(--font-mono); font-size: 1.15rem; font-weight: 850; }
+.mini-card-stack::after { content: ''; position: absolute; inset: 5px; border: 1px solid rgba(255, 255, 255, 0.34); border-radius: 8px; }
+.mini-card-stack span { z-index: 1; }
+.dashboard-room-main { min-width: 0; display: grid; justify-items: start; }
+.dashboard-room-main strong { width: 100%; margin: 0.48rem 0 0.15rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-display); font-size: 1rem; font-weight: 700; letter-spacing: -0.02em; }
+.dashboard-room-main small { color: var(--muted); font-size: 0.72rem; }
+.status-pill { padding: 0.22rem 0.55rem; display: inline-flex; align-items: center; gap: 0.32rem; border-radius: var(--radius-pill); font-size: 0.65rem; font-weight: 780; }
+.status-pill span { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.status-pill.is-active { color: var(--success); background: var(--success-soft); }
+.status-pill.is-closed { color: var(--muted); background: var(--surface-hover); }
+.dashboard-room-meta { display: grid; justify-items: end; align-self: stretch; align-content: space-between; }
+.dashboard-room-meta code { color: var(--muted); font-family: var(--font-mono); font-size: 0.65rem; }
+.card-arrow { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; color: var(--accent); background: var(--accent-soft); font-size: 1.05rem; }
+.empty-state { padding: clamp(2.5rem, 7vw, 5.5rem) 1rem; display: grid; justify-items: center; text-align: center; }
+.empty-card { width: 66px; height: 90px; margin-bottom: 1.4rem; display: grid; place-items: center; border: 2px dashed var(--border-strong); border-radius: var(--radius-md); color: var(--muted); font-family: var(--font-mono); font-size: 1.4rem; transform: rotate(4deg); }
+.empty-state h3 { margin-bottom: 0.55rem; }
+.empty-state p { max-width: 480px; margin-bottom: 1.4rem; color: var(--muted); }
+
+/* Auth, join and focused forms */
+.auth-card, .form-card, .join-layout { overflow: hidden; display: grid; border: 1px solid var(--border); border-radius: var(--radius-xl); background: var(--surface); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), var(--shadow-lg); }
+.auth-card { grid-template-columns: 0.92fr 1.08fr; }
+/* El panel de marca: campo oscuro azul → violeta con resplandor arriba. */
+.auth-promise { position: relative; min-height: 600px; padding: clamp(2rem, 5vw, 4rem); overflow: hidden; color: #ffffff; background: radial-gradient(circle at 100% 0, rgba(237, 17, 123, 0.4), transparent 46%), linear-gradient(160deg, #202b70 0%, #23275f 52%, #302665 100%); }
+.auth-promise::before, .auth-promise::after { content: ''; position: absolute; border: 1px solid rgba(255,255,255,0.11); border-radius: 50%; }
+.auth-promise::before { width: 350px; height: 350px; right: -190px; bottom: -80px; }
+.auth-promise::after { width: 250px; height: 250px; right: -100px; bottom: -30px; }
+.auth-promise h1 { max-width: 440px; margin: 4rem 0 1.3rem; color: #ffffff; font-size: clamp(2.1rem, 4vw, 3.4rem); }
+.auth-promise p { max-width: 420px; color: rgba(255, 255, 255, 0.72); }
+.auth-deck { position: absolute; left: clamp(2rem, 5vw, 4rem); bottom: 3rem; display: flex; }
+.auth-deck span { width: 74px; height: 104px; margin-left: -12px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,0.55); border-radius: var(--radius-md); color: #1a1040; background: #fdf7fb; box-shadow: 0 16px 30px rgba(6, 4, 26, 0.4); font-family: var(--font-mono); font-size: 1.35rem; font-weight: 850; transform: rotate(-8deg); }
+.auth-deck span:first-child { margin-left: 0; transform: rotate(-14deg) translateY(8px); }
+.auth-deck span:last-child { transform: rotate(2deg) translateY(6px); }
+.auth-form-wrap { padding: clamp(2rem, 6vw, 4.5rem); display: flex; flex-direction: column; justify-content: center; }
+.auth-form-wrap h2 { margin-bottom: 0.55rem; }
+.auth-form-wrap > p { margin-bottom: 0; color: var(--muted); }
+.form-switch { margin-top: 1.5rem !important; color: var(--muted); font-size: 0.8rem; text-align: center; }
+.form-switch a { font-weight: 800; }
+.form-card { grid-template-columns: 0.76fr 1.24fr; }
+.form-card-visual { position: relative; min-height: 470px; overflow: hidden; background: radial-gradient(circle at 50% 36%, #7b278d, #3b246f 58%, #202b70); }
+.form-card-visual::after { content: ''; position: absolute; inset: 12%; border: 1px solid rgba(255,255,255,0.18); border-radius: 50%; }
+.floating-card { position: absolute; z-index: 1; width: 90px; height: 126px; display: grid; place-items: center; border-radius: var(--radius-md); color: #1a1040; background: #fdf7fb; box-shadow: 0 28px 48px rgba(6, 4, 26, 0.42); font-family: var(--font-mono); font-size: 1.8rem; font-weight: 900; }
+.card-one { top: 25%; left: 20%; transform: rotate(-15deg); }
+.card-two { top: 42%; left: 43%; transform: rotate(5deg); }
+.card-three { top: 19%; right: 12%; transform: rotate(14deg); }
+.form-card-content { padding: clamp(2rem, 6vw, 4rem); display: flex; flex-direction: column; justify-content: center; }
+.form-card-content h1 { margin-bottom: 0.75rem; font-size: clamp(2rem, 4vw, 2.8rem); }
+.form-intro { margin-bottom: 0; color: var(--muted); }
+.join-layout { grid-template-columns: 1.05fr 0.95fr; }
+.join-table-preview { position: relative; min-height: 520px; overflow: hidden; background: linear-gradient(150deg, var(--felt), var(--felt-deep)); }
+.preview-table { position: absolute; inset: 23% 12%; display: grid; place-items: center; border: 12px solid rgba(12, 8, 40, 0.32); border-radius: 50%; outline: 1px solid rgba(255,255,255,0.2); color: rgba(255,255,255,0.36); font-family: var(--font-display); text-align: center; text-transform: uppercase; font-size: 1.5rem; font-weight: 800; letter-spacing: 0.11em; }
+.preview-seat { position: absolute; z-index: 2; width: 54px; height: 76px; border: 3px solid rgba(255, 255, 255, 0.82); border-radius: var(--radius-sm); background: linear-gradient(170deg, var(--brand-bright), var(--brand)); box-shadow: 0 12px 24px rgba(6, 4, 26, 0.34); }
+.seat-a { top: 12%; left: calc(50% - 27px); }
+.seat-b { top: calc(50% - 38px); right: 6%; transform: rotate(90deg); }
+.seat-c { bottom: 10%; left: calc(50% - 27px); }
+.seat-d { top: calc(50% - 38px); left: 6%; transform: rotate(90deg); }
+.privacy-note { margin: 1.3rem 0 0; padding: 0.85rem 1rem; border: 1px solid color-mix(in srgb, var(--success) 28%, transparent); border-radius: var(--radius-md); color: var(--success); background: var(--success-soft); font-size: 0.74rem; }
+.privacy-note span { margin-right: 0.35rem; }
+.decision-card { max-width: 620px; margin: auto; padding: clamp(2rem, 6vw, 4rem); border: 1px solid var(--border); border-radius: var(--radius-xl); background: var(--surface); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), var(--shadow-md); text-align: center; }
+.decision-icon { width: 66px; height: 66px; margin: 0 auto 1.4rem; display: grid; place-items: center; border-radius: var(--radius-lg); color: var(--danger); background: var(--danger-soft); font-size: 2rem; font-weight: 350; transform: rotate(4deg); }
+.decision-icon.is-neutral { color: var(--success); background: var(--success-soft); }
+.decision-card h1 { margin-bottom: 0.8rem; font-size: clamp(1.8rem, 5vw, 2.6rem); }
+.decision-card > p { max-width: 470px; margin: 0 auto 1.7rem; color: var(--muted); }
+.decision-actions { display: flex; justify-content: center; gap: 0.7rem; }
+
+/* Planning room */
+.poker-room { --table-accent: var(--accent); width: 100%; }
+.room-topbar, .room-brand, .room-top-actions, .deck-heading, .round-status, .room-controls { display: flex; align-items: center; }
+.room-topbar { min-height: 58px; margin-bottom: 1rem; display: flex; justify-content: space-between; gap: 1rem; }
+.room-brand { min-width: 0; gap: 0.7rem; }
+.room-mark { position: relative; width: 40px; height: 52px; flex: 0 0 40px; display: grid; place-items: center; border: 1px solid rgba(237, 17, 123, 0.45); border-radius: var(--radius-sm); color: #ffffff; background: linear-gradient(170deg, var(--brand-bright), var(--brand) 60%, #7d0a41); box-shadow: 0 10px 20px rgba(237, 17, 123, 0.26); font-family: var(--font-mono); font-weight: 900; transform: rotate(-4deg); }
+.room-mark::after { content: ''; position: absolute; inset: 4px; border: 1px solid rgba(255, 255, 255, 0.34); border-radius: 5px; }
+.room-brand > div { min-width: 0; display: grid; grid-template-columns: auto 1fr; align-items: baseline; gap: 0 0.5rem; }
+.room-kicker { grid-column: 1 / -1; color: var(--muted); font-size: 0.62rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; }
+.room-brand strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-display); font-size: 1.05rem; font-weight: 800; letter-spacing: -0.03em; }
+.room-code { color: var(--muted); font-family: var(--font-mono); font-size: 0.66rem; }
+.room-top-actions { flex: 0 0 auto; gap: 0.5rem; }
+.room-switch { min-height: 44px; padding: 0.5rem 0.85rem; display: inline-flex; align-items: center; gap: 0.4rem; border: 1px solid var(--border); border-radius: var(--radius-pill); background: var(--surface); color: var(--text-soft); cursor: pointer; font-size: 0.72rem; font-weight: 750; transition: border-color var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease); }
+.room-switch:hover { border-color: var(--border-strong); background: var(--surface-hover); color: var(--text); }
+.room-switch[aria-pressed="false"] { color: var(--muted); }
+.room-switch[aria-pressed="true"] { border-color: color-mix(in srgb, var(--brand) 40%, var(--border)); }
+.room-switch .switch-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); box-shadow: 0 0 0 3px var(--success-soft); }
+.room-switch[aria-pressed="false"] .switch-dot { background: var(--muted); box-shadow: 0 0 0 3px var(--surface-hover); }
+.facilitator-badge { padding: 0.3rem 0.7rem; border-radius: var(--radius-pill); color: var(--accent); background: var(--accent-soft); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 35%, transparent); font-size: 0.66rem; font-weight: 800; letter-spacing: 0.04em; }
+.connection-state { display: inline-flex; align-items: center; gap: 0.38rem; color: var(--warning); font-size: 0.72rem; font-weight: 750; }
+.connection-state > span:first-child { width: 7px; height: 7px; border-radius: 50%; background: currentColor; box-shadow: 0 0 0 3px var(--warning-soft); }
+.connection-state.is-live { color: var(--success); }
+.connection-state.is-live > span:first-child { box-shadow: 0 0 0 3px var(--success-soft); }
+.room-button { min-height: 44px; padding: 0.62rem 1.05rem; display: inline-flex; align-items: center; justify-content: center; gap: 0.38rem; border: 1px solid var(--border); border-radius: var(--radius-pill); box-shadow: none; cursor: pointer; font-size: 0.78rem; font-weight: 750; transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease); }
+.room-button-secondary { color: var(--text); background: var(--surface); }
+.room-button-secondary:hover { border-color: var(--border-strong); background: var(--surface-hover); }
+.room-button-primary { color: var(--accent-contrast); border-color: transparent; background: var(--accent); box-shadow: 0 10px 22px rgba(237, 17, 123, 0.26); }
+.room-button-primary:hover { background: var(--accent-hover); box-shadow: 0 14px 28px rgba(237, 17, 123, 0.34); }
+.room-workspace { display: grid; grid-template-columns: 270px minmax(0, 1fr); gap: 1rem; align-items: start; }
+.room-sidebar, .poker-table-card, .room-deck-wrap { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), var(--shadow-sm); }
+/* No min-height: it used to stretch the whole layout even with no stories in it,
+   which gave the room the proportions of an admin panel. It is a disclosure now,
+   so on a narrow screen the felt keeps the space. */
+.room-sidebar { grid-row: 1 / span 2; padding: 1rem; display: flex; flex-direction: column; }
+.room-sidebar > summary { display: flex; align-items: center; justify-content: space-between; cursor: pointer; list-style: none; }
+.room-sidebar > summary::-webkit-details-marker { display: none; }
+.room-sidebar > summary .sidebar-caret { color: var(--muted); font-size: 0.7rem; transition: transform 0.18s; }
+.room-sidebar[open] > summary .sidebar-caret { transform: rotate(90deg); }
+.sidebar-heading { display: flex; align-items: center; justify-content: space-between; color: var(--muted); font-size: 0.66rem; font-weight: 850; letter-spacing: 0.11em; text-transform: uppercase; }
+.issue-count { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%; color: var(--text-soft); background: var(--surface-hover); font-size: 0.66rem; }
+.issue-form { margin: 1rem 0 0.8rem; }
+.issue-form input, .issue-form textarea { min-height: 42px; margin-bottom: 0.5rem; padding: 0.55rem 0.65rem; font-size: 0.76rem; }
+.issue-form textarea { min-height: 58px; }
+.issue-form .room-button { width: 100%; }
+.room-issue-list { margin: 0; padding: 0; display: grid; gap: 0.4rem; list-style: none; }
+.room-issue { min-width: 0; padding: 0.65rem; display: flex; align-items: center; justify-content: space-between; gap: 0.4rem; border: 1px solid transparent; border-radius: 10px; color: var(--muted); background: transparent; }
+.room-issue.is-active { border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); color: var(--text); background: var(--accent-soft); }
+.room-issue > div { min-width: 0; }
+.room-issue small, .room-issue span { display: block; }
+.room-issue small { margin-bottom: 0.12rem; font-size: 0.58rem; font-weight: 820; letter-spacing: 0.05em; text-transform: uppercase; }
+.room-issue span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.76rem; font-weight: 650; }
+.issue-activate, .seat-reminder, .close-room { min-width: 44px; min-height: 36px; padding: 0.3rem; border: 0; border-radius: 8px; color: var(--accent); background: transparent; box-shadow: none; cursor: pointer; font-size: 0.68rem; font-weight: 800; }
+.issue-activate:hover, .seat-reminder:hover { background: color-mix(in srgb, var(--accent-soft) 82%, transparent); }
+.issues-empty { padding: 1.2rem 0.4rem; color: var(--muted); font-size: 0.76rem; text-align: center; }
+.close-room-form { margin-top: auto; padding-top: 1rem; }
+.close-room { width: 100%; color: var(--danger); }
+.close-room:hover { background: var(--danger-soft); }
+
+.poker-table-card { position: relative; min-width: 0; min-height: 550px; overflow: hidden; }
+.round-heading { position: relative; z-index: var(--z-stage-ui); padding: clamp(1.35rem, 3vw, 2.2rem) 1rem 0.5rem; text-align: center; }
+.round-status { justify-content: center; gap: 0.42rem; margin-bottom: 0.55rem; color: var(--success); font-size: 0.69rem; font-weight: 820; text-transform: uppercase; letter-spacing: 0.07em; }
+.round-status > span:first-child { width: 7px; height: 7px; border-radius: 50%; background: currentColor; box-shadow: 0 0 0 3px var(--success-soft); }
+.round-status.is-revealed { color: var(--accent); }
+.round-heading h1 { margin: 0; font-size: clamp(1.35rem, 2.4vw, 2rem); }
+.round-heading p { max-width: 700px; margin: 0.42rem auto 0; color: var(--muted); font-size: 0.82rem; }
+
+/* The table is a stage: seats sit on a ring computed from the participant count,
+   the felt centre carries round information, and every layer has a declared order. */
+.table-stage { --ring-rx: 40%; --ring-ry: 33%; --seat-w: 140px; --card-w: 52px; --card-h: 72px; --av-w: 40px; --pet-w: 30px; --stage-h: 390px; position: relative; min-height: var(--stage-h); max-width: 1000px; margin: 0 auto; }
+.table-oval { position: absolute; inset: 50px 11% 34px; z-index: var(--z-felt); border: 12px solid color-mix(in srgb, var(--felt-deep) 78%, #000); border-radius: 50%; outline: 1px solid var(--felt-line); background: radial-gradient(ellipse at 50% 38%, color-mix(in srgb, var(--felt) 93%, white), var(--felt-deep)); box-shadow: inset 0 0 45px rgba(0,0,0,0.23), 0 18px 40px rgba(20,45,37,0.22); }
+.table-oval::after { content: ''; position: absolute; inset: 9px; border: 1px solid var(--felt-line); border-radius: inherit; }
+.table-glow { position: absolute; inset: 50px 11% 34px; z-index: var(--z-marks); border-radius: 50%; opacity: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 42%, color-mix(in srgb, var(--warning) 55%, transparent), transparent 68%); }
+.table-stage.is-consensus .table-glow { animation: consensus-bloom 1.9s ease-out; }
+@keyframes consensus-bloom { 0% { opacity: 0; } 22% { opacity: 1; } 100% { opacity: 0; } }
+
+.table-marks { position: absolute; inset: 50px 11% 34px; z-index: var(--z-marks); display: grid; place-content: center; justify-items: center; gap: 0.5rem; pointer-events: none; text-align: center; }
+.table-count { color: var(--felt-text); font-family: var(--font-display); font-size: clamp(1.8rem, 4vw, 3rem); font-weight: 800; letter-spacing: -0.035em; line-height: 1; }
+.table-count:empty { display: none; }
+.table-count.is-ticking { animation: count-pop 0.42s ease-out; }
+@keyframes count-pop { from { opacity: 0; transform: scale(0.72); } to { opacity: 1; transform: scale(1); } }
+.table-pile { display: flex; height: 40px; align-items: center; }
+/* A dealt card exists or it does not: the pile is driven by the number of votes
+   placed, with an entry animation, instead of a row of always-present cards faded
+   in and out. One less piece of state, and nothing to leave half-faded. */
+.table-pile span { width: 26px; height: 36px; margin-left: -13px; border-radius: 5px; border: 1px solid rgba(0,0,0,0.28); background: var(--card-face); box-shadow: 0 3px 8px rgba(0,0,0,0.3); transform: rotate(var(--pile-tilt, 0deg)); animation: card-deal 0.26s cubic-bezier(.2,.8,.3,1.1); }
+.table-pile span:first-child { margin-left: 0; }
+@keyframes card-deal { from { opacity: 0; transform: rotate(var(--pile-tilt, 0deg)) scale(0.66) translateY(-10px); } to { opacity: 1; transform: rotate(var(--pile-tilt, 0deg)) scale(1) translateY(0); } }
+.table-tally { color: var(--felt-text); font-size: 0.62rem; font-weight: 820; letter-spacing: 0.15em; text-transform: uppercase; }
+
+.table-seats { position: absolute; inset: 0; z-index: var(--z-seats); }
+.table-seat { --seat-angle: 90deg; --seat-index: 0; position: absolute; left: calc(50% + var(--ring-rx) * cos(var(--seat-angle))); top: calc(50% + var(--ring-ry) * sin(var(--seat-angle))); width: var(--seat-w); display: grid; justify-items: center; gap: 0.23rem; transform: translate(-50%, -50%); }
+.seat-figure { display: flex; align-items: center; justify-content: center; gap: 4px; }
+
+/* A person at the table: their own colour, a face, and a companion beside them.
+   All three are cosmetic and derived from data that is public while voting. */
+.seat-avatar { position: relative; flex: 0 0 auto; display: grid; place-items: center; width: var(--av-w); height: var(--av-w); padding: 0; border-radius: 50%; border: 2px solid color-mix(in srgb, var(--felt-deep) 70%, #000); background: var(--seat-hue, var(--seat-hue-0)); box-shadow: 0 5px 12px rgba(6, 20, 17, 0.32), inset 0 -5px 9px rgba(0, 0, 0, 0.14); animation: seat-breathe 3.8s ease-in-out infinite; animation-delay: calc(var(--seat-index) * 0.31s); }
+/* The avatar is the aim target, so it is a real button: reachable by Tab, with
+   the same ring on focus as on hover. Only the avatar is interactive, never the
+   whole seat, so the reminder button never ends up nested inside another one. */
+button.seat-avatar { cursor: crosshair; }
+button.seat-avatar:disabled { cursor: default; }
+.seat-avatar::after { content: ''; position: absolute; inset: -6px; border: 2px dashed var(--warning); border-radius: 50%; opacity: 0; transition: opacity 0.14s; }
+button.seat-avatar:hover:not(:disabled)::after, button.seat-avatar:focus-visible::after { opacity: 1; }
+.seat-avatar svg { width: 66%; height: auto; }
+.is-me .seat-avatar { border-color: #f3bd78; box-shadow: 0 0 0 3px rgba(243,189,120,0.34), 0 5px 12px rgba(6,20,17,0.32); }
+.seat-pet { position: relative; flex: 0 0 auto; width: var(--pet-w); height: var(--pet-w); color: color-mix(in srgb, var(--seat-hue, var(--seat-hue-0)) 76%, var(--card-face)); animation: pet-bob 2.9s ease-in-out infinite; animation-delay: calc(var(--seat-index) * 0.23s); }
+.seat-pet svg { width: 100%; height: 100%; overflow: visible; }
+@keyframes pet-bob { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-4px) rotate(3deg); } }
+/* display, not a fade: on a 5x14px marker the transition buys nothing and it is
+   one more thing that has to finish for the seat to read correctly. */
+.seat-zzz { position: absolute; top: -7px; right: -4px; display: none; color: var(--felt-text); font-size: 0.56rem; font-weight: 820; }
+
+/* The pet mirrors its owner with body language instead of another label. */
+.has-voted .seat-pet { animation-name: pet-hop; animation-duration: 2.1s; }
+@keyframes pet-hop { 0%, 62%, 100% { transform: translateY(0) rotate(0); } 74% { transform: translateY(-7px) rotate(-7deg); } 88% { transform: translateY(-2px) rotate(4deg); } }
+.is-thinking .seat-pet { animation-duration: 5.2s; opacity: 0.82; }
+.is-thinking .seat-zzz { display: block; }
+.is-offline .seat-pet, .is-offline .seat-avatar { animation-play-state: paused; filter: saturate(0.35); }
+
+/* Getting hit is a 600ms shrug and nothing else: no score, no state, no memory. */
+.is-hit .seat-avatar { animation: seat-flinch 0.52s ease-out; }
+@keyframes seat-flinch {
+  0% { transform: translate(0, 0) scale(1); }
+  22% { transform: translate(-4px, 3px) scaleX(1.18) scaleY(0.84); }
+  55% { transform: translate(3px, -2px) scale(0.96); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+.is-hit .seat-pet { animation: pet-startle 0.6s ease-out; }
+@keyframes pet-startle {
+  0% { transform: translate(0, 0) rotate(0); }
+  28% { transform: translate(-9px, -8px) rotate(-15deg); }
+  66% { transform: translate(4px, -3px) rotate(9deg); }
+  100% { transform: translate(0, 0) rotate(0); }
+}
+
+/* A thrown object and the mark it leaves. Both are decoration on the felt and
+   both are capped in number, so a busy table cannot turn into soup. */
+.throw-fly { position: absolute; z-index: var(--z-fly); width: 26px; height: 26px; pointer-events: none; }
+.throw-fly svg { width: 100%; height: 100%; }
+.throw-decal { position: absolute; z-index: var(--z-decal); width: 40px; height: 40px; margin: -20px 0 0 -20px; pointer-events: none; opacity: 0.85; transition: opacity 1.6s ease-in 0.7s; }
+.throw-decal.is-fading { opacity: 0; }
+.throw-decal svg { width: 100%; height: 100%; }
+.throw-label { position: absolute; z-index: var(--z-stage-ui); color: #f6d9a4; font-family: var(--font-mono); font-size: 0.7rem; font-weight: 700; text-shadow: 0 2px 6px rgba(0,0,0,0.65); pointer-events: none; animation: throw-label-rise 1.5s ease-out forwards; }
+@keyframes throw-label-rise {
+  0% { opacity: 0; transform: translate(-50%, 0) scale(0.82); }
+  25% { opacity: 1; transform: translate(-50%, -14px) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -40px) scale(1); }
+}
+
+.participant-card { position: relative; width: var(--card-w); height: var(--card-h); perspective: 680px; animation: seat-breathe 3.8s ease-in-out infinite; animation-delay: calc(var(--seat-index) * 0.31s); }
+@keyframes seat-breathe { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2.5px); } }
+.is-offline .participant-card { animation-play-state: paused; }
+.participant-card-inner { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform 0.56s cubic-bezier(.2,.72,.3,1.05); }
+.is-revealed .participant-card-inner { transform: rotateY(180deg); }
+.participant-face { position: absolute; inset: 0; display: grid; place-items: center; border: 2px solid color-mix(in srgb, var(--card-face) 75%, var(--border)); border-radius: 10px; backface-visibility: hidden; box-shadow: 0 7px 15px rgba(13, 32, 27, 0.22); }
+.participant-back { background: repeating-linear-gradient(135deg, rgba(255,255,255,0.13) 0 2px, transparent 2px 7px), var(--accent); }
+.participant-back::before { content: ''; position: absolute; inset: 5px; border: 1px solid rgba(255,255,255,0.4); border-radius: 5px; }
+.participant-back::after { content: 'PP'; color: var(--accent-contrast); font-size: 0.72rem; font-weight: 900; letter-spacing: -0.06em; }
+.has-voted.just-voted .participant-back { animation: card-place 0.42s cubic-bezier(.2,.8,.3,1.1); }
+@keyframes card-place { from { opacity: 0; transform: translateY(-14px) rotate(-7deg); } to { opacity: 1; transform: translateY(0) rotate(0); } }
+.is-thinking .participant-back { border-style: dashed; border-color: var(--border-strong); background: var(--surface-hover); }
+.is-thinking .participant-back::before { border-color: var(--border); }
+.is-thinking .participant-back::after { content: '…'; color: var(--warning); font-size: 1.65rem; animation: think-pulse 2.1s ease-in-out infinite; animation-delay: calc(var(--seat-index) * 0.23s); }
+@keyframes think-pulse { 0%, 100% { opacity: 0.45; } 50% { opacity: 1; } }
+.is-offline .participant-back { background: var(--surface-inset); }
+.is-offline .participant-back::after { content: '—'; color: var(--muted); font-size: 1.4rem; animation: none; }
+.participant-front { transform: rotateY(180deg); color: var(--card-ink); background: var(--card-face); font-family: var(--font-mono); font-size: clamp(1.1rem, calc(var(--card-w) * 0.4), 1.75rem); font-weight: 900; }
+.participant-front::after { content: 'PP'; position: absolute; right: 5px; bottom: 3px; color: color-mix(in srgb, var(--card-ink) 38%, transparent); font-size: 0.42rem; letter-spacing: -0.05em; }
+/* La tinta de una carta sale de la carta, nunca de un token de tema. La cara es
+   un objeto claro en los dos temas; `--muted` gira con el tema y en oscuro es
+   blanco, así que el guion de «no votó» desaparecía sobre la cara al revelar
+   (1,08:1). Mezclado con la propia cara se mantiene apagado y legible. */
+.participant-front.no-vote { color: color-mix(in srgb, var(--card-ink) 62%, var(--card-face)); }
+.is-me .participant-face { border-color: #f3bd78; box-shadow: 0 0 0 3px rgba(243,189,120,0.28), 0 7px 15px rgba(13,32,27,0.22); }
+.seat-name { max-width: calc(var(--seat-w) - 2px); padding: 0.08rem 0.28rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-radius: 5px; color: var(--text-soft); background: color-mix(in srgb, var(--surface) 90%, transparent); box-shadow: 0 1px 3px rgba(13,32,27,0.1); font-size: 0.7rem; font-weight: 820; }
+.seat-name span { margin-left: 0.25rem; padding: 0.08rem 0.28rem; border-radius: 4px; color: var(--accent); background: var(--accent-soft); font-size: 0.53rem; }
+/* Quién lleva la sala, dicho en la mesa y no sólo en la barra del propio facilitador.
+   Ámbar, no rosa: es información sobre una persona, no una acción que se pulsa, y
+   tiene que distinguirse de la pastilla «Tú» que lleva al lado. */
+.seat-crown { color: var(--warning) !important; background: var(--warning-soft) !important; }
+.seat-state { padding: 0.05rem 0.24rem; border-radius: 4px; color: var(--muted); background: color-mix(in srgb, var(--surface) 90%, transparent); font-size: 0.6rem; font-weight: 650; }
+.has-voted .seat-state { color: var(--success); }
+.is-thinking .seat-state { color: var(--warning); }
+.is-offline { opacity: 0.58; }
+/* Taken out of flow: in flow it changed the seat's height, which made the seat
+   jump every time someone voted and left the ring sized for the tallest seat. */
+.seat-reminder { position: absolute; top: 100%; left: 50%; min-height: 28px; color: var(--warning); background: color-mix(in srgb, var(--surface) 92%, transparent); border-radius: 7px; transform: translateX(-50%); }
+/* Expulsar es la acción más destructiva de la mesa, así que se comporta como tal:
+   no grita en reposo —sería un aspa roja sobre la cara de cada persona toda la
+   sesión— pero aparece entera al apuntar al asiento o al llegar con el teclado.
+   Absoluta, como el recordatorio, para no alterar la altura del asiento. */
+.seat-remove {
+  position: absolute; top: -8px; right: 2px; z-index: var(--z-stage-ui);
+  width: 22px; height: 22px; padding: 0; display: grid; place-items: center;
+  border: 1px solid color-mix(in srgb, var(--danger) 45%, transparent); border-radius: 50%;
+  color: var(--danger); background: color-mix(in srgb, var(--surface) 92%, transparent);
+  font-size: 0.82rem; font-weight: 700; line-height: 1; cursor: pointer;
+  opacity: 0; transition: opacity var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
+}
+.table-seat:hover .seat-remove, .seat-remove:focus-visible { opacity: 1; }
+.seat-remove:hover { color: var(--danger); background: var(--danger-soft); }
+/* En una pantalla táctil no hay «apuntar»: o está siempre, o no existe. */
+@media (hover: none) {
+  .seat-remove { opacity: 1; }
+}
+
+.is-reminded .participant-card::after { content: ''; position: absolute; inset: -7px; border: 2px solid var(--warning); border-radius: 14px; animation: gentle-nudge 1.05s ease-out 2; }
+@keyframes gentle-nudge { from { opacity: 1; transform: scale(.82); } to { opacity: 0; transform: scale(1.18); } }
+
+/* A card that travels from the hand to the seat, so placing a vote is a physical act. */
+.card-ghost { position: fixed; z-index: 200; display: grid; place-items: center; border: 1px solid var(--border-strong); border-radius: 10px; color: var(--card-ink); background: var(--card-face); box-shadow: var(--shadow-md); font-family: var(--font-mono); font-size: 1.1rem; font-weight: 900; pointer-events: none; }
+
+.room-controls { position: relative; z-index: var(--z-stage-ui); min-height: 66px; padding: 0.55rem 1rem 1rem; justify-content: center; flex-wrap: wrap; gap: 0.55rem; }
+.finish-issue { width: min(100%, 280px); display: flex; gap: 0.42rem; }
+.finish-issue input { min-width: 0; min-height: 44px; padding: 0.55rem 0.62rem; }
+
+/* The result of a round is the emotional peak; it gets a panel, not a label. */
+.round-result { position: relative; z-index: var(--z-stage-ui); margin: 0 clamp(0.75rem, 3vw, 1.75rem) 1rem; padding: 1rem 1.15rem; display: grid; gap: 0.85rem; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface-raised); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), var(--shadow-sm); }
+.result-figures { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1.5rem; }
+.result-figure { display: grid; }
+.result-figure strong { font-family: var(--font-display); font-size: 1.8rem; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.035em; line-height: 1.05; }
+.result-figure span { color: var(--muted); font-size: 0.6rem; font-weight: 820; letter-spacing: 0.12em; text-transform: uppercase; }
+.result-verdict { margin: 0 0 0 auto; padding: 0.35rem 0.7rem; border-radius: var(--radius-pill); font-size: 0.72rem; font-weight: 820; }
+.result-verdict.is-consensus { color: var(--success); background: var(--success-soft); }
+.result-verdict.is-split { color: var(--accent); background: var(--accent-soft); }
+.result-bars { margin: 0; padding: 0; display: flex; align-items: flex-end; gap: 0.4rem; min-height: 72px; list-style: none; }
+.result-bar { flex: 1 1 0; max-width: 60px; display: grid; justify-items: center; gap: 0.3rem; }
+.result-bar b { display: block; width: 100%; min-height: 4px; border-radius: 5px 5px 2px 2px; background: var(--success); transform-origin: bottom; animation: bar-grow 0.46s cubic-bezier(.2,.8,.3,1) backwards; animation-delay: calc(var(--bar-index, 0) * 60ms); }
+.result-bar.is-edge b { background: var(--accent); }
+@keyframes bar-grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+.result-bar span { color: var(--text-soft); font-family: var(--font-mono); font-size: 0.68rem; }
+.result-bar small { color: var(--muted); font-size: 0.58rem; font-weight: 750; }
+
+/* Changing your own character from inside the room. Guests choose on the way in;
+   authenticated participants never see that screen, so this is the path that
+   works for everyone. */
+.character-panel { position: relative; }
+.character-panel > summary { list-style: none; }
+.character-panel > summary::-webkit-details-marker { display: none; }
+.character-sheet { position: absolute; right: 0; top: calc(100% + 0.4rem); z-index: 120; width: min(19rem, calc(100vw - 2rem)); padding: 0.9rem 1rem; display: grid; gap: 0.6rem; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface-raised); box-shadow: var(--shadow-md); }
+.character-sheet .pick-grid legend { font-size: 0.72rem; }
+.character-sheet .pick-pet label { width: 54px; font-size: 0.55rem; }
+.character-sheet .pick-pet svg { width: 28px; height: 28px; }
+.character-sheet .pick-color label { width: 28px; height: 28px; }
+
+/* One person at the table is a normal state, not a broken one. */
+.table-empty { position: absolute; inset: 50px 11% 34px; z-index: var(--z-marks); display: none; place-content: center; justify-items: center; gap: 0.4rem; padding: 0 1rem; text-align: center; pointer-events: none; }
+.is-alone .table-empty { display: grid; }
+.is-alone .table-marks { display: none; }
+.table-empty strong { color: rgba(247, 241, 225, 0.86); font-size: 0.92rem; }
+.table-empty span { max-width: 22rem; color: var(--felt-text); font-size: 0.74rem; }
+.table-empty .seat-pet { --pet-w: 42px; width: 42px; height: 42px; color: color-mix(in srgb, var(--warning) 70%, var(--card-face)); }
+
+/* The recess: people leave their seats while the table waits for the last vote.
+   The seats stay visible underneath, dimmed, so nobody loses track of who has
+   voted; the recess is a layer over the meeting, never a replacement for it. */
+.recess-layer { position: absolute; inset: 0; z-index: var(--z-pets); display: none; border-radius: var(--radius-lg); background: color-mix(in srgb, var(--felt-deep) 55%, transparent); }
+.is-recess .recess-layer { display: block; }
+.is-recess .table-seats { opacity: 0.34; transition: opacity 0.3s; }
+.is-recess .table-marks { opacity: 0.5; }
+.recess-floor { position: absolute; inset: 0; border-radius: inherit; cursor: pointer;
+  background:
+    repeating-linear-gradient(90deg, rgba(0,0,0,0.05) 0 1px, transparent 1px 46px),
+    repeating-linear-gradient(0deg, rgba(0,0,0,0.05) 0 1px, transparent 1px 46px); }
+.recess-note { position: absolute; top: 0.6rem; left: 50%; padding: 0.3rem 0.7rem; border-radius: var(--radius-pill); color: var(--felt-text); background: rgba(6, 20, 17, 0.55); font-size: 0.62rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; transform: translateX(-50%); pointer-events: none; }
+
+.recess-spot { position: absolute; width: 68px; margin: -30px 0 0 -34px; display: grid; justify-items: center; gap: 0.2rem; pointer-events: none; }
+.recess-spot .spot-glyph { display: grid; place-items: center; width: 38px; height: 38px; border: 1px solid rgba(247, 241, 225, 0.22); border-radius: 11px; color: #e8cf9a; background: rgba(6, 20, 17, 0.55); transition: border-color 0.2s, background 0.2s; }
+.recess-spot .spot-glyph svg { width: 22px; height: 22px; }
+.recess-spot b { color: var(--felt-text); font-size: 0.56rem; font-weight: 820; letter-spacing: 0.08em; text-transform: uppercase; }
+.recess-spot.is-near .spot-glyph { border-color: var(--warning); background: color-mix(in srgb, var(--warning) 26%, transparent); }
+.recess-spot.is-near b { color: #f6d9a4; }
+
+.recess-walker { position: absolute; left: 0; top: 0; width: 40px; margin: -20px 0 0 -20px; display: grid; justify-items: center; gap: 2px; will-change: transform; }
+.walker-body { position: relative; display: grid; place-items: center; width: 34px; height: 34px; border: 2px solid rgba(4, 16, 13, 0.45); border-radius: 50%; background: var(--seat-hue, var(--seat-hue-0)); box-shadow: 0 5px 11px rgba(0, 0, 0, 0.36); }
+.walker-body svg { width: 22px; height: auto; }
+.recess-walker.is-walking .walker-body { animation: walker-step 0.34s ease-in-out infinite; }
+@keyframes walker-step { 0%, 100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-4px) rotate(4deg); } }
+.recess-walker b { padding: 0 5px; border: 1px solid rgba(247, 241, 225, 0.14); border-radius: 4px; color: #eae4d4; background: rgba(4, 16, 13, 0.62); font-size: 0.6rem; font-weight: 700; white-space: nowrap; }
+.recess-walker.is-me b { color: #f6d9a4; border-color: rgba(217, 171, 88, 0.5); }
+.walker-mug { position: absolute; top: -5px; right: -8px; width: 15px; height: 15px; color: #f6d9a4; opacity: 0; transition: opacity 0.25s; }
+.recess-walker.has-coffee .walker-mug { opacity: 1; }
+.walker-wave { position: absolute; bottom: 100%; left: 50%; padding: 2px 7px; border-radius: 8px; color: var(--card-ink); background: var(--card-face); font-size: 0.62rem; font-weight: 750; white-space: nowrap; opacity: 0; transition: opacity 0.2s; transform: translate(-50%, -6px); pointer-events: none; }
+.recess-walker.is-greeting .walker-wave { opacity: 1; }
+
+/* The deck reads as a hand of cards: fanned, overlapping, anchored to the bottom edge. */
+.room-deck-wrap { grid-column: 2; padding: 0.9rem 1rem 1.05rem; }
+.deck-heading { justify-content: space-between; gap: 1rem; margin-bottom: 0.65rem; }
+.deck-heading > div { display: grid; }
+.deck-eyebrow { color: var(--accent); font-size: 0.56rem; font-weight: 850; letter-spacing: 0.1em; text-transform: uppercase; }
+.deck-heading strong { font-size: 0.85rem; }
+.deck-heading > span { max-width: 420px; color: var(--muted); font-size: 0.7rem; text-align: right; }
+/* The tray sits with the hand of cards: everything a player controls is in one
+   panel. It disappears entirely when the layer is off, rather than sitting there
+   greyed out and inviting clicks that will be refused. */
+.throw-tray { margin-top: 0.7rem; padding-top: 0.7rem; display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; border-top: 1px dashed var(--border); }
+.throw-tray-label { margin-right: 0.2rem; color: var(--muted); font-size: 0.6rem; font-weight: 850; letter-spacing: 0.1em; text-transform: uppercase; }
+.throw-item { width: 38px; height: 38px; padding: 5px; display: grid; place-items: center; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); cursor: pointer; transition: border-color 0.15s, background 0.15s, transform 0.15s, box-shadow 0.15s; }
+.throw-item svg { width: 100%; height: 100%; }
+.throw-item:hover { border-color: var(--border-strong); background: var(--surface-hover); transform: translateY(-2px); }
+.throw-item[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 26%, transparent); }
+.throw-hint { flex: 1 1 100%; margin: 0.1rem 0 0; color: var(--muted); font-size: 0.68rem; }
+.throw-hint b { color: var(--text-soft); font-weight: 750; }
+
+.deck { margin: 0; padding: 1.35rem 0.25rem 0.55rem; display: flex; flex-wrap: nowrap; justify-content: center; align-items: flex-end; }
+.poker-card { --card-index: 0; --card-total: 1; --card-fan: 3.4deg; --card-lift: 0px; --card-spin: calc((var(--card-index) - (var(--card-total) - 1) / 2) * var(--card-fan)); position: relative; flex: 0 0 54px; width: 54px; height: 76px; margin-inline: -5px; padding: 0; display: grid; place-items: center; overflow: hidden; border: 1px solid var(--border-strong); border-radius: 10px; color: var(--card-ink); background: var(--card-face); box-shadow: var(--shadow-xs); cursor: pointer; font-family: var(--font-mono); font-size: 1.18rem; font-weight: 900; transform: translateY(var(--card-lift)) rotate(var(--card-spin)); transform-origin: 50% 150%; transition: transform 0.18s cubic-bezier(.2,.7,.3,1.2), box-shadow 0.18s, border-color 0.18s, background 0.18s, color 0.18s; }
+.poker-card::before { content: ''; position: absolute; inset: 4px; border: 1px solid color-mix(in srgb, var(--card-ink) 14%, transparent); border-radius: 6px; }
+.poker-card span { z-index: 1; }
+.poker-card.is-wide-value { font-size: 0.62rem; letter-spacing: -0.03em; }
+.poker-card:focus-visible { z-index: 4; }
+.poker-card.selected { --card-lift: -18px; z-index: 3; color: var(--accent-contrast); border-color: var(--accent); background: var(--accent); box-shadow: 0 10px 22px color-mix(in srgb, var(--accent) 26%, transparent); }
+.poker-card.selected::before { border-color: color-mix(in srgb, var(--accent-contrast) 38%, transparent); }
+.poker-card:disabled { opacity: 0.42; cursor: not-allowed; filter: saturate(0.55); }
+
+#toast { position: fixed; right: 1.25rem; bottom: 1.25rem; z-index: 150; max-width: min(380px, calc(100vw - 2rem)); padding: 0.85rem 1.1rem; border: 1px solid color-mix(in srgb, var(--success) 50%, transparent); border-radius: var(--radius-md); color: var(--text); background: color-mix(in srgb, var(--success-soft) 94%, var(--surface)); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); box-shadow: var(--shadow-lg); font-size: 0.78rem; font-weight: 700; opacity: 0; transform: translateY(130%); transition: opacity 0.2s, transform 0.25s; pointer-events: none; }
+#toast.is-error { border-color: color-mix(in srgb, var(--danger) 50%, transparent); background: var(--danger-soft); }
+#toast.show { opacity: 1; transform: translateY(0); }
+
+@media (hover: hover) and (pointer: fine) {
+  .button:hover, .room-button:hover { transform: translateY(-1px); }
+  .poker-card:hover:not(:disabled) { --card-lift: -14px; z-index: 2; border-color: var(--accent); box-shadow: var(--shadow-md); }
+  .poker-card.selected:hover { --card-lift: -24px; }
+}
+
+@media (max-width: 1100px) {
+  .room-workspace { grid-template-columns: minmax(0, 1fr); }
+  .poker-table-card { order: 1; }
+  .room-deck-wrap { grid-column: 1; order: 2; }
+  .room-sidebar { grid-row: auto; order: 3; min-height: 0; }
+  .room-issue-list { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+  .close-room-form { margin-top: 0.5rem; }
+  .close-room { width: auto; }
+}
+
+@media (max-width: 820px) {
+  :root { --header-height: 68px; }
+  .site-header { padding-block: 0.65rem; }
+  .brand-copy small, .user-name { display: none; }
+  .user-chip { width: 40px; padding: 0.25rem; }
+  .page-shell { padding-block: 2rem; }
+  .auth-card, .form-card, .join-layout { grid-template-columns: 1fr; }
+  .auth-promise { min-height: 320px; padding: 2rem; }
+  .auth-promise h1 { max-width: 620px; margin-top: 1.8rem; font-size: clamp(1.9rem, 7vw, 2.6rem); }
+  .auth-deck { display: none; }
+  .form-card-visual { min-height: 260px; }
+  .floating-card { width: 70px; height: 98px; }
+  .join-table-preview { min-height: 320px; }
+  .room-topbar { align-items: flex-start; }
+  .facilitator-badge { display: none; }
+}
+
+@media (max-width: 700px) {
+  .site-header { gap: 0.5rem; }
+  .brand-mark { flex-basis: 38px; width: 38px; height: 38px; }
+  .brand-copy strong { font-size: 0.88rem; }
+  .nav-link:not(.nav-button), .nav-register, .user-chip { display: none; }
+  .site-nav { gap: 0.2rem; }
+  .nav-link { padding-inline: 0.55rem; }
+  .page-heading { align-items: flex-start; flex-direction: column; gap: 1.2rem; }
+  .page-heading .button { width: 100%; }
+  .dashboard-room-grid { grid-template-columns: 1fr; }
+  .room-shell { width: min(100% - 1rem, 1540px); padding-top: 0.65rem; }
+  .room-topbar { flex-wrap: wrap; }
+  .room-brand { flex: 1 1 100%; }
+  /* Six controls live here now, not two: without wrapping the row runs a few
+     pixels past a 390px phone and takes the whole page sideways with it. */
+  .room-top-actions { width: 100%; flex-wrap: wrap; row-gap: 0.5rem; justify-content: space-between; }
+  .poker-table-card { min-height: 0; overflow: visible; }
+  .round-heading { padding: 1.25rem 0.75rem 0.35rem; }
+  .round-heading p { font-size: 0.76rem; }
+  .table-stage { min-height: 0; padding: 0.85rem 0 0.35rem; }
+  .table-oval, .table-glow { display: none; }
+  /* No felt to walk on once the ring collapses into a strip. */
+  .is-recess .recess-layer { display: none; }
+  .is-recess .table-seats, .is-recess .table-marks { opacity: 1; }
+  .table-marks { position: static; inset: auto; padding-bottom: 0.7rem; }
+  .table-count, .table-tally { color: var(--muted); }
+  .table-pile span { border-color: var(--border); }
+  /* width:100%, never max-content: a scroll container sized to its own content has
+     nothing to scroll, so it pushes the page sideways instead. The flex items
+     overflow it and it scrolls them, the same way the deck and the story list do. */
+  .table-seats { position: static; display: flex; gap: 0.75rem; width: 100%; padding: 0 0.7rem; overflow-x: auto; overscroll-behavior-inline: contain; scrollbar-width: thin; }
+  /* relative, not static: the reminder overlay still anchors to its own seat */
+  .table-seat { position: relative; left: auto; top: auto; width: 104px; flex: 0 0 104px; transform: none; }
+  .participant-card { width: 52px; height: 72px; }
+  .seat-figure { flex-wrap: wrap; gap: 3px; }
+  .seat-avatar { width: 32px; height: 32px; }
+  .seat-pet { width: 24px; height: 24px; }
+  .seat-name { max-width: 102px; }
+  .round-result { margin-inline: 0.75rem; }
+  .result-bars { min-height: 62px; }
+  .room-controls { padding: 0.8rem; }
+  .room-controls > .room-button { flex: 1 1 130px; }
+  .finish-issue { flex: 1 1 100%; width: 100%; }
+  .room-deck-wrap { padding: 0.8rem; }
+  .throw-tray { gap: 0.35rem; }
+  .throw-item { width: 34px; height: 34px; }
+  .room-switch .switch-label { display: none; }
+  .room-switch { padding-inline: 0.6rem; }
+  .deck-heading { align-items: flex-end; }
+  .deck-heading > span { max-width: 190px; font-size: 0.63rem; }
+  .deck { justify-content: flex-start; overflow-x: auto; overscroll-behavior-inline: contain; padding: 1.1rem 0.2rem 0.85rem; scrollbar-width: thin; }
+  .poker-card { --card-fan: 2.2deg; flex-basis: 52px; width: 52px; height: 74px; }
+  /* No popover on a phone: a 19rem sheet anchored to a button near the right edge
+     cannot fit in 390px however it is anchored, so it opens in flow on its own row. */
+  .character-panel { flex: 1 1 100%; }
+  .character-sheet { position: static; width: auto; margin-top: 0.5rem; }
+  .room-issue-list { display: flex; overflow-x: auto; padding-bottom: 0.4rem; }
+  .room-issue { flex: 0 0 min(82vw, 260px); }
+  .decision-actions { flex-direction: column-reverse; }
+  .decision-actions .button { width: 100%; }
+}
+
+@media (max-width: 460px) {
+  .page-shell { width: min(100% - 1rem, var(--content)); }
+  .room-shell { width: calc(100% - 0.75rem); }
+  .site-footer span:nth-child(2), .site-footer span:nth-child(3) { display: none; }
+  .dashboard-room-card { grid-template-columns: auto minmax(0, 1fr); min-height: 118px; gap: 0.8rem; }
+  .dashboard-room-meta { display: none; }
+  .mini-card-stack { width: 46px; height: 64px; }
+  .form-card-content, .auth-form-wrap { padding: 1.4rem; }
+  .form-card-visual, .join-table-preview { min-height: 220px; }
+  .connection-state { font-size: 0.66rem; }
+  .room-code { display: none; }
+  #toast { right: 0.75rem; bottom: 0.75rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
+}
+
+/* Character picker on the join screen */
+.pick-grid { display: grid; gap: 0.4rem; margin: 0; padding: 0; border: 0; }
+.pick-grid legend { padding: 0; color: var(--text-soft); font-size: 0.8rem; font-weight: 750; }
+.pick-grid ul { margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.45rem; list-style: none; }
+.pick-grid li { display: flex; }
+.pick-grid label { margin: 0; cursor: pointer; }
+.pick-grid input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.pick-pet label { width: 62px; padding: 0.4rem 0.2rem 0.3rem; display: grid; justify-items: center; gap: 0.18rem; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); color: var(--muted); font-size: 0.6rem; font-weight: 780; transition: border-color 0.15s, background 0.15s, transform 0.15s, color 0.15s; }
+.pick-pet label:hover { border-color: var(--border-strong); background: var(--surface-hover); transform: translateY(-2px); }
+.pick-pet svg { width: 34px; height: 34px; color: var(--primary); }
+.pick-pet input:checked + label { border-color: var(--accent); color: var(--text); background: var(--accent-soft); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 26%, transparent); }
+.pick-pet input:focus-visible + label { outline: 3px solid var(--focus); outline-offset: 3px; }
+.pick-color label { width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--border); background: var(--pick-hue); transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s; }
+.pick-color label:hover { transform: translateY(-2px); border-color: var(--border-strong); }
+.pick-color input:checked + label { border-color: var(--text); box-shadow: 0 0 0 3px color-mix(in srgb, var(--text) 22%, transparent); transform: translateY(-2px); }
+.pick-color input:focus-visible + label { outline: 3px solid var(--focus); outline-offset: 3px; }
+.pick-preview { --av-w: 40px; --pet-w: 32px; min-height: 62px; display: flex; align-items: center; gap: 0.6rem; margin-top: 0.2rem; padding: 0.6rem 0.75rem; border: 1px solid var(--border); border-radius: var(--radius-md); background: linear-gradient(150deg, var(--felt), var(--felt-deep)); }
+.pick-preview .seat-avatar, .pick-preview .seat-pet { animation: none; }
+.pick-preview span { color: var(--felt-text); font-size: 0.68rem; font-weight: 780; letter-spacing: 0.06em; text-transform: uppercase; }
+
+/* ------------------------------------------------------------------------- */
+/* Carcasa de aplicación móvil                                               */
+/*                                                                           */
+/* Por debajo de 821px la web deja de comportarse como una página y pasa a   */
+/* comportarse como una app: barra superior fija y compacta, barra de        */
+/* pestañas abajo al alcance del pulgar, y en la sala la baraja anclada al   */
+/* borde inferior como la mano de cartas de un juego.                        */
+/*                                                                           */
+/* Tres reglas sostienen la ilusión y ninguna es decorativa:                 */
+/* - `100dvh` y `env(safe-area-inset-*)`, para que nada quede debajo del     */
+/*   notch ni de la barra de gestos.                                         */
+/* - `touch-action: manipulation`, que elimina el retardo de 300 ms y el     */
+/*   zoom por doble toque sobre los controles.                               */
+/* - Ningún contenedor horizontal nuevo: el test de teléfono exige que la    */
+/*   página no se desplace de lado, así que todo lo anclado va de 0 a 0.     */
+/* ------------------------------------------------------------------------- */
+
+button, .button, .nav-link, .tab-item, .poker-card, .room-button, .room-switch,
+.throw-item, .pick-grid label { touch-action: manipulation; }
+
+.app-tabbar { display: none; }
+
+@media (max-width: 820px) {
+  :root { --header-height: 58px; --tabbar-height: 62px; }
+
+  .site-header {
+    padding-inline: 0.85rem;
+    padding-block: 0.4rem;
+    padding-top: max(0.4rem, env(safe-area-inset-top));
+    min-height: var(--header-height);
+  }
+  .brand-mark { flex-basis: 34px; width: 34px; height: 34px; }
+  .brand-mark span { font-size: 0.9rem; }
+  .brand-copy strong { font-size: 0.95rem; }
+  /* Los destinos se van enteros a la barra inferior, no a medias: dejar «Salir»
+     arriba y «Nueva sala» abajo obliga a buscar en dos sitios. Arriba queda la
+     identidad y el tema, que es lo que una app pone en su barra de título. */
+  .site-nav .nav-link, .site-nav .nav-register, .site-nav .user-chip, .site-nav .nav-form { display: none; }
+
+  /* La barra de pestañas sustituye a los enlaces del encabezado, que hasta
+     ahora simplemente desaparecían en pantallas pequeñas: el usuario de móvil
+     se quedaba sin forma de crear una sala o cerrar sesión. */
+  .app-tabbar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 140;
+    display: flex; align-items: stretch;
+    min-height: var(--tabbar-height);
+    padding: 0.3rem 0.4rem;
+    padding-bottom: max(0.3rem, env(safe-area-inset-bottom));
+    border-top: 1px solid var(--border);
+    background: var(--chrome);
+    backdrop-filter: blur(22px) saturate(1.4);
+    -webkit-backdrop-filter: blur(22px) saturate(1.4);
+  }
+  .app-tabbar form { display: flex; flex: 1 1 0; margin: 0; }
+  .tab-item {
+    flex: 1 1 0; min-width: 0; min-height: 52px; padding: 0.3rem 0.25rem;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.18rem;
+    border: 0; border-radius: var(--radius-md); background: transparent;
+    color: var(--muted); font-size: 0.64rem; font-weight: 700; letter-spacing: 0.01em;
+    text-decoration: none; cursor: pointer;
+    transition: color var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
+  }
+  .tab-item svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  .tab-item span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tab-item:active { background: var(--surface-hover); }
+  .tab-item[aria-current="page"] { color: var(--accent); background: var(--accent-soft); }
+  /* La acción principal se reconoce sin leerla: es la única pastilla rosa. */
+  .tab-item.is-action { color: var(--accent); }
+  .tab-item.is-action svg { stroke-width: 2.1; }
+
+  body { padding-bottom: calc(var(--tabbar-height) + env(safe-area-inset-bottom)); }
+  .site-footer { padding-bottom: 1rem; }
+}
+
+@media (max-width: 700px) {
+  /* En la sala la barra de pestañas estorba: el borde inferior es de la mano
+     de cartas, que es la acción real de esta pantalla. */
+  body.is-room .app-tabbar { display: none; }
+  body.is-room { padding-bottom: 0; }
+  body.is-room .site-footer { display: none; }
+
+  .room-shell { padding-top: 0.5rem; padding-bottom: calc(var(--deck-dock-height, 164px) + env(safe-area-inset-bottom)); }
+
+  /* La cabecera de la sala es lo que el teléfono no se puede permitir: antes
+     ocupaba media pantalla antes de enseñar la mesa. Se queda el nombre, el
+     estado y los interruptores; el rótulo «Mesa de planning» sobra cuando la
+     app entera es una mesa de planning. */
+  .room-topbar { margin-bottom: 0.7rem; row-gap: 0.4rem; }
+  .room-kicker { display: none; }
+  .room-mark { width: 32px; height: 42px; flex-basis: 32px; font-size: 0.82rem; }
+  .room-brand strong { font-size: 0.98rem; }
+
+  /* Un interruptor sin etiqueta es un punto de color: no dice qué apaga.
+     Caben los seis en dos filas si se encogen, y así siguen diciéndolo. */
+  .room-switch .switch-label { display: inline; }
+  .room-top-actions { justify-content: flex-start; gap: 0.35rem; row-gap: 0.4rem; }
+  /* El espacio se gana estrechando, nunca bajando de 44px: un control de 38px
+     de alto se falla con el pulgar, y una fila extra cuesta doce píxeles. */
+  .room-switch { min-height: 44px; padding: 0.38rem 0.65rem; font-size: 0.68rem; }
+  .room-switch .switch-dot { width: 7px; height: 7px; }
+  .room-button { min-height: 44px; padding: 0.4rem 0.8rem; font-size: 0.72rem; }
+  #share-room { margin-left: auto; }
+
+  /* La baraja, anclada abajo como una hoja: esquinas redondeadas sólo arriba,
+     fondo translúcido y un tirador que anuncia que es una capa sobre la mesa. */
+  .room-deck-wrap {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 130;
+    padding: 0.55rem 0.7rem 0.7rem;
+    padding-bottom: max(0.7rem, env(safe-area-inset-bottom));
+    border: 0; border-top: 1px solid var(--border);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    background: var(--chrome);
+    backdrop-filter: blur(22px) saturate(1.4);
+    -webkit-backdrop-filter: blur(22px) saturate(1.4);
+    box-shadow: 0 -18px 40px rgba(6, 4, 26, 0.26);
+  }
+  .room-deck-wrap::before {
+    content: ''; display: block; width: 38px; height: 4px; margin: 0 auto 0.5rem;
+    border-radius: var(--radius-pill); background: var(--border-strong);
+  }
+  /* La hoja anclada paga cada píxel con mesa: sólo el rótulo, sin la nota de
+     privacidad, que ya está escrita en la pantalla de ingreso. */
+  .deck-heading { margin-bottom: 0.2rem; }
+  .deck-heading > span { display: none; }
+  .deck-heading strong { font-size: 0.8rem; }
+  .deck { padding: 0.9rem 0.2rem 0.35rem; }
+  /* El dedo necesita más carta que el ratón. */
+  .poker-card { flex-basis: 56px; width: 56px; height: 80px; }
+  .throw-tray { margin-top: 0.5rem; padding-top: 0.5rem; }
+  .throw-hint { display: none; }
+
+  #toast { bottom: calc(var(--deck-dock-height, 164px) + 0.6rem); right: 0.75rem; left: 0.75rem; max-width: none; }
+
+  /* Los controles de facilitación son la segunda acción de la pantalla: fila
+     completa, píldoras grandes, nada apretado contra el borde. */
+  .room-controls { padding: 0.75rem 0.85rem 0.95rem; gap: 0.5rem; }
+  .room-controls > .room-button { min-height: 48px; }
+
+  .poker-table-card, .room-sidebar { border-radius: var(--radius-lg); }
+  .round-heading h1 { font-size: clamp(1.25rem, 5.5vw, 1.6rem); }
+}
+
+@media (max-width: 460px) {
+  .tab-item span { font-size: 0.6rem; }
+  .room-deck-wrap { padding-inline: 0.5rem; }
+}

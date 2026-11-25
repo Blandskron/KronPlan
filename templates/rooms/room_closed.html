@@ -1,0 +1,6 @@
+{% extends 'base.html' %}
+{% block title %}Sala cerrada · Planning Pocket{% endblock %}
+{% block shell_class %}narrow-shell{% endblock %}
+{% block content %}
+<section class="decision-card"><span class="decision-icon is-neutral" aria-hidden="true">✓</span><span class="eyebrow">Sesión finalizada</span><h1>Esta mesa ya cerró</h1><p>La sala <strong>{{ room.name }}</strong> fue cerrada por su facilitador.</p><a href="{% url 'dashboard' %}" class="button button-primary">Ir al inicio</a></section>
+{% endblock %}

@@ -1,0 +1,71 @@
+# Copyright (c) 2026 Blandskron. All rights reserved.
+#
+# Publica una GitHub Release cuando se empuja un tag vX.Y.Z. El tag no publica nada por sí
+# solo: primero tiene que pasar el mismo CI que cualquier pull request.
+name: Release
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+-*"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validación
+    uses: ./.github/workflows/ci.yml
+
+  consistency:
+    name: El tag coincide con el proyecto
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      # Un tag que no coincide con pyproject.toml produce una release que miente sobre lo
+      # que contiene. Se comprueba aquí porque es barato y el error es caro de deshacer.
+      - name: Comparar el tag con pyproject.toml y el CHANGELOG
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME#v}"
+          PROJECT="$(python .github/scripts/project_version.py)"
+          echo "tag=$TAG pyproject=$PROJECT"
+          if [ "$TAG" != "$PROJECT" ]; then
+            echo "::error::El tag v$TAG no coincide con la versión $PROJECT de pyproject.toml"
+            exit 1
+          fi
+          python .github/scripts/release_notes.py "$TAG" --check
+
+  publish:
+    name: Publicar la release
+    runs-on: ubuntu-latest
+    needs: [validate, consistency]
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+
+      - name: Extraer las notas del CHANGELOG
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME#v}"
+          python .github/scripts/release_notes.py "$TAG" > release-notes.md
+          cat release-notes.md
+
+      - name: Crear la GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            --title "Planning Pocket ${GITHUB_REF_NAME}" \
+            --notes-file release-notes.md \
+            --verify-tag
