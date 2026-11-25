@@ -22,6 +22,34 @@
 - **Optional Playful Layer:** Soft cosmetic throws and recess mode—rate-limited by the server, non-accumulating, and independently toggleable per room and per screen (see `docs/DECISIONS.md` ADR-005).
 - **BLANDSKRON / KronPlan Design System:** Dark mode by default with Light and System themes, `Sora` + `Inter` + `JetBrains Mono`, WCAG 2.2 AA calibrated contrast, Lucide SVG icons, and GPU-only animations respecting `prefers-reduced-motion`.
 
+## Video Walkthrough (Narrated in Spanish)
+
+Watch the full end-to-end narrated walkthrough (2m 25s, 720p H.264 + Spanish voiceover and WebVTT captions) directly on GitHub Pages or download the video from the repository:
+
+[![Watch KronPlan Walkthrough Video](docs/media/kronplan-video-poster.png)](https://blandskron.github.io/KronPlan/#video)
+
+- **Watch online with chapters:** [blandskron.github.io/KronPlan/#video](https://blandskron.github.io/KronPlan/#video)
+- **Video file (`7.1 MB`):** [`docs/media/kronplan-walkthrough.mp4`](docs/media/kronplan-walkthrough.mp4)
+- **Spanish captions (WebVTT):** [`docs/media/kronplan-walkthrough.es.vtt`](docs/media/kronplan-walkthrough.es.vtt)
+
+<details>
+<summary>Video chapters (10 sections · 02:25)</summary>
+
+| Time | Chapter |
+| --- | --- |
+| `00:00` | 01 · Presentación de KronPlan |
+| `00:19` | 02 · Registro y Dashboard Bento |
+| `00:35` | 03 · Nueva sala y cola de historias |
+| `00:50` | 04 · Ingreso de invitados sin cuenta |
+| `01:01` | 05 · Mesa en vivo y privacidad del voto |
+| `01:18` | 06 · Baraja larga y personaje |
+| `01:31` | 07 · Modo recreo y capa lúdica |
+| `01:43` | 08 · Revelación sincronizada y consenso |
+| `01:58` | 09 · Ronda dividida y análisis |
+| `02:10` | 10 · Modo claro, oscuro y cierre |
+
+</details>
+
 ## Screenshots & Product Flow
 
 ### Dark & Light Modes (Desktop)

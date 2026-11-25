@@ -1,0 +1,61 @@
+WEBVTT
+
+00:00:00.150 --> 00:00:00.496
+¡Hola!
+
+00:00:00.496 --> 00:00:06.728
+Bienvenidos a KronPlan, la plataforma open source de Planning Poker y estimación ágil creada por BLANDSKRON.
+
+00:00:06.728 --> 00:00:18.730
+Construida de forma nativa con Django, Channels y WebSockets, ofrece sesiones en tiempo real con privacidad garantizada desde el servidor, sin cuentas obligatorias para tus invitados y sin frameworks pesados.
+
+00:00:19.280 --> 00:00:24.705
+Para comenzar, solo la persona que facilita la sesión necesita registrarse en menos de un minuto.
+
+00:00:24.705 --> 00:00:34.380
+Al entrar llegas al panel de Mis salas, diseñado en formato Bento Grid, donde ves de un vistazo tus sesiones activas, cerradas y el acceso directo para abrir una nueva mesa.
+
+00:00:34.950 --> 00:00:42.088
+Al crear una sala con el nombre de tu sprint, KronPlan genera una dirección URL única e impredecible para compartir con el equipo.
+
+00:00:42.088 --> 00:00:49.280
+Dentro del espacio de trabajo, en la columna izquierda añades las historias de usuario y eliges cuál se va a estimar en esta ronda.
+
+00:00:49.830 --> 00:01:00.800
+Cada integrante que recibe el enlace entra sin contraseñas ni formularios largos: escribe su nombre, elige su mascota y su color en la vista previa en vivo, y toma asiento alrededor de la mesa con un solo clic.
+
+00:01:01.360 --> 00:01:05.922
+Sobre el paño vemos al equipo distribuido automáticamente en un anillo elíptico.
+
+00:01:05.922 --> 00:01:10.141
+Para votar, seleccionas una carta en la baraja inferior o usas el teclado.
+
+00:01:10.141 --> 00:01:17.440
+Mientras la votación sigue abierta, ningún valor sale hacia otros clientes: solo se muestra quién ya votó mediante el reverso K.
+
+00:01:17.990 --> 00:01:25.438
+Si una historia requiere estimaciones más amplias, el facilitador activa la baraja larga hasta ochenta y nueve, interrogación y café.
+
+00:01:25.438 --> 00:01:30.590
+Además, desde el botón Personaje cualquiera puede cambiar su mascota y color en tiempo real.
+
+00:01:31.160 --> 00:01:42.420
+Mientras llega el último voto, la sala cuenta con una capa lúdica opcional para enviar objetos decorativos o abrir el modo recreo, donde los participantes caminan por el paño sin bloquear la baraja ni generar presión.
+
+00:01:42.970 --> 00:01:46.456
+Cuando todos están listos, el facilitador pulsa Revelar votos.
+
+00:01:46.456 --> 00:01:57.250
+Tras la cuenta atrás de tres segundos, las cartas giran de forma escalonada y, al existir unanimidad, la mesa celebra el consenso para guardar la estimación directamente en la historia activa.
+
+00:01:57.800 --> 00:02:09.660
+En rondas sin consenso, como esta segunda historia con estimaciones entre tres y ocho, KronPlan calcula el promedio, el rango y la distribución por carta resaltando los extremos para enfocar la conversación antes de revotar.
+
+00:02:10.210 --> 00:02:18.175
+Toda la experiencia adapta su contraste WCAG dos punto dos AA entre tema oscuro, tema claro y preferencia del sistema en escritorio o móvil.
+
+00:02:18.175 --> 00:02:23.010
+KronPlan es open source bajo licencia MIT y puedes desplegarlo en minutos con Docker.
+
+00:02:23.010 --> 00:02:24.660
+¡Plan together, build better!

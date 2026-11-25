@@ -509,6 +509,91 @@
         .zoom-trigger:hover .zoom-hint,
         .zoom-trigger:focus-visible .zoom-hint { opacity: 1; transform: translateY(0); }
 
+        /* Video Walkthrough Section */
+        .video-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.38fr) minmax(0, 0.82fr);
+            gap: var(--kp-space-6);
+            align-items: start;
+        }
+        .video-card { padding: var(--kp-space-4); }
+        .video-shell {
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            border: 1px solid var(--border);
+            background: var(--kp-neutral-950);
+            aspect-ratio: 16 / 9;
+        }
+        .video-shell video {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: var(--kp-neutral-950);
+        }
+        .video-bar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: var(--kp-space-3);
+            margin-top: var(--kp-space-3);
+            font-size: 0.86rem;
+            color: var(--text-soft);
+        }
+        .video-chapters {
+            padding: var(--kp-space-4);
+            display: flex;
+            flex-direction: column;
+            gap: var(--kp-space-2);
+            max-height: 490px;
+            overflow-y: auto;
+        }
+        .video-chapters-title {
+            font-family: var(--font-mono);
+            font-size: 0.74rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+            padding: 4px 8px;
+        }
+        .chapter-btn {
+            display: grid;
+            grid-template-columns: 54px minmax(0, 1fr);
+            align-items: center;
+            gap: var(--kp-space-3);
+            padding: 9px 11px;
+            border-radius: var(--radius-md);
+            border: 1px solid transparent;
+            background: transparent;
+            text-align: left;
+            transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+        }
+        .chapter-btn:hover { background: var(--surface-inset); }
+        .chapter-btn[aria-current="true"] {
+            background: var(--accent-soft);
+            border-color: var(--border-strong);
+        }
+        .chapter-time {
+            display: inline-grid;
+            place-items: center;
+            padding: 4px 6px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            background: var(--surface-inset);
+            font-family: var(--font-mono);
+            font-size: 0.76rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+        .chapter-btn[aria-current="true"] .chapter-time {
+            background: var(--primary);
+            border-color: transparent;
+            color: #FFFFFF;
+        }
+        .chapter-btn strong { font-size: 0.87rem; font-weight: 600; line-height: 1.25; }
+
         /* Product Flow Interactive Stage */
         .flow-grid {
             display: grid;
@@ -796,7 +881,8 @@
         .footer-links a:hover { color: var(--accent); }
 
         @media (max-width: 980px) {
-            .hero, .flow-grid { grid-template-columns: 1fr; }
+            .hero, .flow-grid, .video-grid { grid-template-columns: 1fr; }
+            .video-chapters { max-height: none; }
             .kp-bento { grid-template-columns: repeat(2, minmax(0, 1fr)); }
             .flow-steps {
                 display: grid;
@@ -847,6 +933,7 @@
                 </span>
             </a>
             <ul class="nav-links">
+                <li><a href="#video">Video demo</a></li>
                 <li><a href="#flujo">Flujo en vivo</a></li>
                 <li><a href="#vistas">Oscuro / Claro · Móvil</a></li>
                 <li><a href="#arquitectura">Arquitectura</a></li>
@@ -875,11 +962,11 @@
                     Django, Channels, WebSockets y un sistema de diseño nativo calibrado WCAG 2.2 AA sin frameworks SPA.
                 </p>
                 <div class="hero-actions">
-                    <a class="button button-primary" href="#flujo">
-                        Explorar flujo completo
+                    <a class="button button-primary" href="#video">
+                        Ver video explicado
                         <svg class="kp-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
                     </a>
-                    <a class="button button-secondary" href="https://github.com/Blandskron/KronPlan" target="_blank" rel="noopener">Repositorio en GitHub</a>
+                    <a class="button button-secondary" href="#flujo">Explorar flujo</a>
                 </div>
                 <ul class="hero-trust">
                     <li><svg class="kp-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-shield-check"></use></svg> Cero votos filtrados antes del reveal</li>
@@ -905,6 +992,35 @@
                         <img id="hero-img" src="./docs/screenshots/views/room-voting-desktop-dark.png" alt="Mesa colaborativa de KronPlan durante una votación activa">
                         <span class="zoom-hint"><svg class="kp-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-maximize"></use></svg> Ampliar</span>
                     </button>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="video" aria-labelledby="video-title">
+            <div class="section-head">
+                <div>
+                    <span class="eyebrow">Guía audiovisual en español · 02:25</span>
+                    <h2 id="video-title">Cómo funciona KronPlan paso a paso</h2>
+                    <p class="section-sub">Video narrado sobre una sesión real con 5 participantes conectados por WebSocket: desde el registro y enlace de invitados hasta baraja larga, recreo, consenso y cambio de tema.</p>
+                </div>
+            </div>
+
+            <div class="video-grid">
+                <div class="kp-glass video-card">
+                    <div class="video-shell">
+                        <video id="demo-video" controls playsinline preload="metadata" poster="./docs/media/kronplan-video-poster.png">
+                            <source src="./docs/media/kronplan-walkthrough.mp4" type="video/mp4">
+                            <track kind="captions" src="./docs/media/kronplan-walkthrough.es.vtt" srclang="es" label="Español" default>
+                        </video>
+                    </div>
+                    <div class="video-bar">
+                        <span><strong>Audio:</strong> Narración en español · Subtítulos WebVTT activados</span>
+                        <a class="button button-secondary" href="./docs/media/kronplan-walkthrough.mp4" download>Descargar MP4 (7.1 MB)</a>
+                    </div>
+                </div>
+
+                <div class="kp-glass video-chapters" id="video-chapters" aria-label="Capítulos del video">
+                    <div class="video-chapters-title">Capítulos del recorrido</div>
                 </div>
             </div>
         </section>
@@ -1387,6 +1503,49 @@ python manage.py migrate &amp;&amp; python manage.py runserver</pre>
                     }
                 });
             });
+
+            // Interactive Video Chapters
+            const VIDEO_CHAPTERS = [
+                { num: '01', time: '00:00', start: 0.0, title: 'Presentación de KronPlan' },
+                { num: '02', time: '00:19', start: 19.13, title: 'Registro y Dashboard Bento' },
+                { num: '03', time: '00:35', start: 34.8, title: 'Nueva sala y cola de historias' },
+                { num: '04', time: '00:50', start: 49.68, title: 'Ingreso de invitados sin cuenta' },
+                { num: '05', time: '01:01', start: 61.21, title: 'Mesa en vivo y privacidad del voto' },
+                { num: '06', time: '01:18', start: 77.84, title: 'Baraja larga y personaje' },
+                { num: '07', time: '01:31', start: 91.01, title: 'Modo recreo y capa lúdica' },
+                { num: '08', time: '01:43', start: 102.82, title: 'Revelación sincronizada y consenso' },
+                { num: '09', time: '01:58', start: 117.65, title: 'Ronda dividida y análisis' },
+                { num: '10', time: '02:10', start: 130.06, title: 'Modo claro, oscuro y cierre' }
+            ];
+            const demoVideo = document.getElementById('demo-video');
+            const chaptersBox = document.getElementById('video-chapters');
+
+            function highlightChapter(currentSec) {
+                let activeIdx = 0;
+                for (let i = 0; i < VIDEO_CHAPTERS.length; i += 1) {
+                    if (currentSec + 0.25 >= VIDEO_CHAPTERS[i].start) activeIdx = i;
+                }
+                chaptersBox.querySelectorAll('.chapter-btn').forEach((btn, idx) => {
+                    btn.setAttribute('aria-current', String(idx === activeIdx));
+                });
+            }
+
+            VIDEO_CHAPTERS.forEach((ch, idx) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'chapter-btn';
+                btn.dataset.start = String(ch.start);
+                btn.setAttribute('aria-current', String(idx === 0));
+                btn.innerHTML = '<span class="chapter-time">' + ch.time + '</span><strong>' + ch.num + ' · ' + ch.title + '</strong>';
+                btn.addEventListener('click', () => {
+                    demoVideo.currentTime = ch.start;
+                    highlightChapter(ch.start);
+                    const playPromise = demoVideo.play();
+                    if (playPromise && typeof playPromise.catch === 'function') playPromise.catch(() => {});
+                });
+                chaptersBox.appendChild(btn);
+            });
+            demoVideo.addEventListener('timeupdate', () => highlightChapter(demoVideo.currentTime));
 
             syncThemeUI();
             renderFlow(0);
