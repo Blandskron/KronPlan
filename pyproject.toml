@@ -1,7 +1,7 @@
 [project]
-name = "planning_pocket"
+name = "kronplan"
 version = "1.0.1"
-description = "Planning Poker Online Alternative"
+description = "KronPlan — Agile Planning & Estimation (Open Source · By BLANDSKRON)"
 readme = "README.md"
 requires-python = ">=3.12"
 

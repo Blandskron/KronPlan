@@ -24,4 +24,10 @@ class RegisterView(CreateView):
 @login_required
 def dashboard(request):
     rooms = request.user.rooms.all().order_by('-created_at')
-    return render(request, 'accounts/dashboard.html', {'rooms': rooms})
+    active_count = rooms.filter(status='active').count()
+    closed_count = rooms.filter(status='closed').count()
+    return render(request, 'accounts/dashboard.html', {
+        'rooms': rooms,
+        'active_count': active_count,
+        'closed_count': closed_count,
+    })

@@ -1,10 +1,10 @@
 {% extends 'base.html' %}
-{% block title %}Entrar a {{ room.name }} · Planning Pocket{% endblock %}
+{% block title %}Entrar a {{ room.name }} · KronPlan{% endblock %}
 {% block shell_class %}narrow-shell{% endblock %}
 {% block content %}
 {% include 'rooms/_table_sprite.html' %}
 <section class="join-layout">
-    <div class="join-table-preview" aria-hidden="true"><span class="preview-seat seat-a"></span><span class="preview-seat seat-b"></span><span class="preview-seat seat-c"></span><span class="preview-seat seat-d"></span><div class="preview-table"><span>Planning<br>Pocket</span></div></div>
+    <div class="join-table-preview" aria-hidden="true"><span class="preview-seat seat-a"></span><span class="preview-seat seat-b"></span><span class="preview-seat seat-c"></span><span class="preview-seat seat-d"></span><div class="preview-table"><span>Kron<br>Plan</span></div></div>
     <div class="form-card-content join-content"><span class="eyebrow">Te invitaron a jugar</span><h1>{{ room.name }}</h1><p class="form-intro">Elige el nombre que verá el equipo y con qué te sientas a la mesa. No necesitas crear una cuenta.</p>
         <form method="post" class="stack-form" id="join-form">{% csrf_token %}
             {{ form.display_name.errors }}
@@ -50,7 +50,7 @@
 
             <button type="submit" class="button button-primary button-block">Tomar asiento</button>
         </form>
-        <p class="privacy-note"><span aria-hidden="true">●</span> Tu voto seguirá oculto hasta que el facilitador lo revele.</p>
+        <p class="privacy-note"><svg class="kp-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-shield-check"></use></svg> Tu voto seguirá oculto hasta que el facilitador lo revele.</p>
     </div>
 </section>
 

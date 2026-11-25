@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}KronPlan — Agile Planning &amp; Estimation{% endblock %}
+{% block shell_class %}landing-shell{% endblock %}
+{% block content %}
+<section class="landing-hero">
+    <div class="landing-copy">
+        <span class="kp-badge is-cyan">
+            <svg class="kp-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-sparkles"></use></svg>
+            Open Source · By BLANDSKRON
+        </span>
+        <h1>Plan together.<br><span>Build better.</span></h1>
+        <p class="landing-lead">
+            Estimación ágil en tiempo real sin ruido ni sesgos de anclaje. Crea una mesa,
+            comparte el enlace con tu equipo y revela los votos cuando todos hayan elegido su carta.
+        </p>
+        <div class="landing-actions">
+            <a class="button button-primary" href="{% url 'register' %}">
+                Crear cuenta gratis
+                <svg class="kp-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
+            </a>
+            <a class="button button-secondary" href="{% url 'login' %}">Ingresar</a>
+        </div>
+        <ul class="landing-trust" aria-label="Garantías del sistema">
+            <li><svg class="kp-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-shield-check"></use></svg> Voto privado hasta el reveal</li>
+            <li><svg class="kp-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-users"></use></svg> Invitados sin registro</li>
+            <li><svg class="kp-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-wifi"></use></svg> WebSockets instantáneos</li>
+        </ul>
+    </div>
+
+    <div class="landing-stage kp-glass" aria-hidden="true">
+        <div class="landing-stage-top">
+            <span class="kp-badge"><span class="stage-dot"></span> Sprint 14 · Refinamiento</span>
+            <span class="stage-consensus">Consenso · 5 pts</span>
+        </div>
+        <div class="landing-preview-felt">
+            <div class="landing-mini-seat">
+                <span class="mini-card-back">K</span>
+                <small>Ana</small>
+            </div>
+            <div class="landing-mini-seat">
+                <span class="mini-card-face">5</span>
+                <small>Diego</small>
+            </div>
+            <div class="landing-mini-seat">
+                <span class="mini-card-face">5</span>
+                <small>Carla</small>
+            </div>
+            <div class="landing-mini-seat">
+                <span class="mini-card-face">8</span>
+                <small>Bruno</small>
+            </div>
+        </div>
+        <div class="landing-fan">
+            <span>1</span><span>2</span><span>3</span><span class="is-picked">5</span><span>8</span><span>13</span><span>?</span>
+        </div>
+    </div>
+</section>
+
+<section class="landing-section" aria-labelledby="landing-capabilities">
+    <div class="section-heading">
+        <div>
+            <span class="eyebrow">Diseñado para equipos reales</span>
+            <h2 id="landing-capabilities">Todo lo que necesitas en una sesión ágil</h2>
+        </div>
+    </div>
+    <div class="kp-bento landing-bento">
+        <article class="kp-glass bento-card">
+            <span class="bento-icon"><svg class="kp-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-shield-check"></use></svg></span>
+            <h3>Privacidad garantizada en servidor</h3>
+            <p>Ningún voto sale del backend antes de que el facilitador pulse revelar. El navegador nunca recibe valores anticipados.</p>
+        </article>
+        <article class="kp-glass bento-card">
+            <span class="bento-icon is-cyan"><svg class="kp-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-wifi"></use></svg></span>
+            <h3>Sincronización en vivo</h3>
+            <p>Cartas, estados, cola de historias y resultados calculados en tiempo real sobre Django Channels y WebSockets.</p>
+        </article>
+        <article class="kp-glass bento-card">
+            <span class="bento-icon"><svg class="kp-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-users"></use></svg></span>
+            <h3>Acceso en un enlace</h3>
+            <p>Solo quien crea la sala necesita cuenta. Tu equipo entra con su nombre, elige mascota y vota en segundos.</p>
+        </article>
+        <article class="kp-glass bento-card">
+            <span class="bento-icon is-consensus"><svg class="kp-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-sparkles"></use></svg></span>
+            <h3>Colaboración sin presión</h3>
+            <p>Capa lúdica opcional, modo recreo y efectos desactivables por sala o pantalla. La reunión siempre tiene prioridad.</p>
+        </article>
+    </div>
+</section>
+
+<section class="landing-section" aria-labelledby="landing-flow">
+    <div class="kp-glass landing-steps">
+        <div class="steps-head">
+            <span class="eyebrow">Flujo en 3 pasos</span>
+            <h2 id="landing-flow">De cero a consenso en menos de un minuto</h2>
+        </div>
+        <ol class="steps-list">
+            <li>
+                <span class="step-num">01</span>
+                <div><strong>Crea tu sala</strong><p>Define el nombre de la sesión y suma las historias del sprint si lo necesitas.</p></div>
+            </li>
+            <li>
+                <span class="step-num">02</span>
+                <div><strong>Comparte el enlace</strong><p>Cada integrante abre la URL única, escribe su nombre y toma asiento en la mesa.</p></div>
+            </li>
+            <li>
+                <span class="step-num">03</span>
+                <div><strong>Vota y revela</strong><p>Las cartas giran juntas mostrando promedio, rango, consenso y distribución.</p></div>
+            </li>
+        </ol>
+    </div>
+</section>
+{% endblock %}

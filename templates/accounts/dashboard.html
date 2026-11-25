@@ -1,12 +1,40 @@
 {% extends 'base.html' %}
-{% block title %}Mis salas · Planning Pocket{% endblock %}
+{% block title %}Mis salas · KronPlan{% endblock %}
 {% block content %}
 <section class="page-heading">
-    <div><span class="eyebrow">Tu espacio de juego</span><h1>Mis salas</h1><p>Retoma una sesión o prepara una mesa nueva para tu equipo.</p></div>
-    <a href="{% url 'create_room' %}" class="button button-primary"><span aria-hidden="true">＋</span> Nueva sala</a>
+    <div>
+        <span class="eyebrow">Workspace ágil</span>
+        <h1>Mis salas</h1>
+        <p>Retoma una sesión en curso o prepara una mesa nueva para estimar con tu equipo.</p>
+    </div>
+    <a href="{% url 'create_room' %}" class="button button-primary">
+        <svg class="kp-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-plus"></use></svg>
+        Nueva sala
+    </a>
 </section>
+
+<section class="kp-bento dashboard-bento" aria-label="Resumen de sesiones">
+    <article class="kp-glass bento-stat">
+        <span class="bento-stat-label">Total de salas</span>
+        <strong class="bento-stat-value">{{ rooms|length }}</strong>
+    </article>
+    <article class="kp-glass bento-stat">
+        <span class="bento-stat-label">Sesiones activas</span>
+        <strong class="bento-stat-value is-active">{{ active_count }}</strong>
+    </article>
+    <article class="kp-glass bento-stat">
+        <span class="bento-stat-label">Sesiones cerradas</span>
+        <strong class="bento-stat-value is-closed">{{ closed_count }}</strong>
+    </article>
+</section>
+
 <section class="room-collection" aria-labelledby="rooms-heading">
-    <div class="section-heading"><div><h2 id="rooms-heading">Tus salas</h2><p>{{ rooms|length }} sesión{{ rooms|length|pluralize:"es" }} en total</p></div></div>
+    <div class="section-heading">
+        <div>
+            <h2 id="rooms-heading">Tus salas</h2>
+            <p>{{ rooms|length }} sesión{{ rooms|length|pluralize:"es" }} en total</p>
+        </div>
+    </div>
     {% if rooms %}
         <ul class="dashboard-room-grid">
             {% for room in rooms %}
@@ -16,12 +44,17 @@
                         <span class="status-pill {% if room.status == 'active' %}is-active{% else %}is-closed{% endif %}"><span></span>{% if room.status == 'active' %}Activa{% else %}Cerrada{% endif %}</span>
                         <strong>{{ room.name }}</strong><small>Creada el {{ room.created_at|date:"d/m/Y" }}</small>
                     </span>
-                    <span class="dashboard-room-meta"><code>{{ room.public_id }}</code><span class="card-arrow" aria-hidden="true">→</span></span>
+                    <span class="dashboard-room-meta"><code>{{ room.public_id }}</code><span class="card-arrow" aria-hidden="true"><svg class="kp-icon" viewBox="0 0 24 24"><use href="#icon-arrow-right"></use></svg></span></span>
                 </a></li>
             {% endfor %}
         </ul>
     {% else %}
-        <div class="empty-state"><span class="empty-card" aria-hidden="true">?</span><h3>Tu primera mesa está a una carta</h3><p>Crea una sala, comparte el enlace y empieza a estimar sin configurar nada más.</p><a href="{% url 'create_room' %}" class="button button-primary">Crear mi primera sala</a></div>
+        <div class="empty-state">
+            <span class="empty-card" aria-hidden="true">?</span>
+            <h3>Tu primera mesa está a una carta</h3>
+            <p>Crea una sala, comparte el enlace y empieza a estimar sin configurar nada más.</p>
+            <a href="{% url 'create_room' %}" class="button button-primary">Crear mi primera sala</a>
+        </div>
     {% endif %}
 </section>
 {% endblock %}

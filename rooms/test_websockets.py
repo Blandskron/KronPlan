@@ -665,3 +665,207 @@ async def test_moving_stops_when_the_room_closes():
     )
 
     await walker.disconnect()
+
+
+@pytest.mark.asyncio
+@pytest.mark.django_db(transaction=True)
+async def test_dispatch_errors_are_isolated_to_sender_and_never_broadcast():
+    owner = await sync_to_async(User.objects.create_user)(username="owner", password="pwd")
+    guest_user = await sync_to_async(User.objects.create_user)(username="guest", password="pwd")
+    room = await sync_to_async(PokerRoom.objects.create)(owner=owner, name="WS errors")
+    await sync_to_async(Participant.objects.create)(room=room, user=owner, display_name="Owner")
+    await sync_to_async(Participant.objects.create)(
+        room=room, user=guest_user, display_name="Guest"
+    )
+
+    owner_socket, _ = await connect_participant(room, owner)
+    await wait_for(owner_socket, "participant.joined")
+    guest_socket, _ = await connect_participant(room, guest_user)
+    await wait_for(owner_socket, "participant.joined")
+    await wait_for(guest_socket, "participant.joined")
+
+    bad_payloads = [
+        ("text", "[1, 2, 3]", "invalid_payload"),
+        ("json", {"type": "vote.cast", "value": 42}, "invalid_payload"),
+        ("json", {"type": "vote.cast", "value": "999"}, "invalid_action"),
+        ("json", {"type": "issue.activate", "issue_id": True}, "invalid_payload"),
+        ("json", {"type": "issue.activate", "issue_id": 999999}, "invalid_action"),
+        ("json", {"type": "issue.finish", "final_result": 5}, "invalid_payload"),
+        ("json", {"type": "issue.finish", "final_result": "5"}, "invalid_action"),
+        ("json", {"type": "participant.remind", "participant_id": "x"}, "invalid_payload"),
+        ("json", {"type": "participant.remind", "participant_id": 999999}, "invalid_action"),
+        ("json", {"type": "player.throw", "target_id": False, "item": "tomate"}, "invalid_payload"),
+        ("json", {"type": "player.throw", "target_id": 1, "item": 99}, "invalid_payload"),
+        ("json", {"type": "room.set_playful", "enabled": "yes"}, "invalid_payload"),
+        ("json", {"type": "room.set_recess", "enabled": "yes"}, "invalid_payload"),
+        ("json", {"type": "room.set_deck", "expanded": "yes"}, "invalid_payload"),
+        ("json", {"type": "participant.set_identity", "pet": 123}, "invalid_payload"),
+        ("json", {"type": "participant.set_identity", "color_index": True}, "invalid_payload"),
+        ("json", {"type": "participant.set_identity", "pet": "unicornio"}, "invalid_action"),
+        ("json", {"type": "participant.remove", "participant_id": "1"}, "invalid_payload"),
+    ]
+    for idx, (kind, payload, expected_code) in enumerate(bad_payloads):
+        if idx > 0 and idx % 8 == 0:
+            await owner_socket.disconnect()
+            owner_socket, _ = await connect_participant(room, owner)
+            await wait_for(owner_socket, "participant.joined")
+            await wait_for(guest_socket, "participant.joined")
+        if kind == "text":
+            await owner_socket.send_to(text_data=payload)
+        else:
+            await owner_socket.send_json_to(payload)
+        err = await owner_socket.receive_json_from()
+        assert err["type"] == "error"
+        assert err["code"] == expected_code
+
+    # Guest trying facilitator-only actions receives error without broadcasting.
+    for action in [
+        {"type": "room.reset"},
+        {"type": "room.set_playful", "enabled": False},
+        {"type": "room.set_recess", "enabled": True},
+        {"type": "issue.activate", "issue_id": 1},
+    ]:
+        await guest_socket.send_json_to(action)
+        err = await guest_socket.receive_json_from()
+        assert err["type"] == "error"
+
+    assert await owner_socket.receive_nothing(timeout=0.15)
+    assert await guest_socket.receive_nothing(timeout=0.15)
+
+    await owner_socket.disconnect()
+    await guest_socket.disconnect()
+
+
+@pytest.mark.asyncio
+@pytest.mark.django_db(transaction=True)
+async def test_issue_lifecycle_reset_and_identity_update_over_websocket():
+    owner = await sync_to_async(User.objects.create_user)(username="owner", password="pwd")
+    room = await sync_to_async(PokerRoom.objects.create)(owner=owner, name="WS issues")
+    issue = await sync_to_async(Issue.objects.create)(room=room, title="Story 1")
+    await sync_to_async(Participant.objects.create)(room=room, user=owner, display_name="Owner")
+
+    socket, _ = await connect_participant(room, owner)
+    await wait_for(socket, "participant.joined")
+
+    await socket.send_json_to({"type": "issue.activate", "issue_id": issue.id})
+    activated = await wait_for(socket, "issue.activated")
+    assert activated["issue"]["id"] == issue.id
+    await wait_for(socket, "room.resetted")
+
+    await socket.send_json_to({"type": "vote.cast", "value": "5"})
+    await wait_for(socket, "participant.voted")
+    await socket.send_json_to({"type": "room.reveal"})
+    await wait_for(socket, "room.revealed")
+
+    await socket.send_json_to({"type": "issue.finish", "final_result": "5"})
+    finished = await wait_for(socket, "issue.finished")
+    assert finished["issue"]["final_result"] == "5"
+    await wait_for(socket, "room.resetted")
+
+    await socket.send_json_to(
+        {"type": "participant.set_identity", "pet": "dragon", "color_index": 2}
+    )
+    updated = await wait_for(socket, "participant.updated")
+    assert updated["participant"]["pet"] == "dragon"
+    assert updated["participant"]["color"] == 2
+
+    await socket.send_json_to({"type": "room.reset"})
+    await wait_for(socket, "room.resetted")
+
+    await socket.disconnect()
+
+
+@pytest.mark.asyncio
+@pytest.mark.django_db(transaction=True)
+async def test_observer_sees_joined_once_and_left_only_when_final_tab_closes():
+    owner = await sync_to_async(User.objects.create_user)(username="owner", password="pwd")
+    peer_user = await sync_to_async(User.objects.create_user)(username="peer", password="pwd")
+    room = await sync_to_async(PokerRoom.objects.create)(owner=owner, name="WS tabs")
+    await sync_to_async(Participant.objects.create)(room=room, user=owner, display_name="Owner")
+    peer = await sync_to_async(Participant.objects.create)(
+        room=room, user=peer_user, display_name="Peer"
+    )
+
+    observer, _ = await connect_participant(room, owner)
+    await wait_for(observer, "participant.joined")
+
+    tab1, _ = await connect_participant(room, peer_user)
+    joined = await wait_for(observer, "participant.joined")
+    assert joined["participant"]["id"] == peer.id
+    await wait_for(tab1, "participant.joined")
+
+    tab2, _ = await connect_participant(room, peer_user)
+    assert await observer.receive_nothing(timeout=0.1)
+
+    await tab1.disconnect()
+    assert await observer.receive_nothing(timeout=0.1)
+
+    await tab2.disconnect()
+    left = await wait_for(observer, "participant.left")
+    assert left["participant_id"] == peer.id
+
+    await observer.disconnect()
+
+
+@pytest.mark.asyncio
+@pytest.mark.django_db(transaction=True)
+async def test_player_move_rejects_closed_recess_invalid_coords_and_fast_repeats():
+    owner = await sync_to_async(User.objects.create_user)(username="owner", password="pwd")
+    room = await sync_to_async(PokerRoom.objects.create)(
+        owner=owner, name="WS recess", recess_open=False
+    )
+    await sync_to_async(Participant.objects.create)(room=room, user=owner, display_name="Owner")
+
+    socket, _ = await connect_participant(room, owner)
+    await wait_for(socket, "participant.joined")
+
+    # Recess closed -> silently ignored
+    await socket.send_json_to({"type": "player.move", "x": 0.5, "y": 0.5})
+    assert await socket.receive_nothing(timeout=0.1)
+
+    await socket.send_json_to({"type": "room.set_recess", "enabled": True})
+    await wait_for(socket, "room.recess_changed")
+
+    # Invalid coordinates -> silently ignored
+    await socket.send_json_to({"type": "player.move", "x": True, "y": 0.5})
+    await socket.send_json_to({"type": "player.move", "x": "bad", "y": 0.5})
+    await socket.send_json_to({"type": "player.move", "x": 1.5, "y": 0.5})
+    assert await socket.receive_nothing(timeout=0.1)
+
+    # First valid move succeeds; immediate repeat (< 110ms) is silently throttled
+    await socket.send_json_to({"type": "player.move", "x": 0.3, "y": 0.7})
+    await socket.send_json_to({"type": "player.move", "x": 0.4, "y": 0.8})
+    moved = await wait_for(socket, "player.moved")
+    assert moved["x"] == 0.3 and moved["y"] == 0.7
+    assert await socket.receive_nothing(timeout=0.12)
+
+    await socket.disconnect()
+
+
+@pytest.mark.asyncio
+@pytest.mark.django_db(transaction=True)
+async def test_participant_joined_respects_vote_privacy_and_preserves_revealed_vote():
+    owner = await sync_to_async(User.objects.create_user)(username="owner", password="pwd")
+    room = await sync_to_async(PokerRoom.objects.create)(owner=owner, name="WS join vote")
+    await sync_to_async(Participant.objects.create)(
+        room=room, user=owner, display_name="Owner", current_vote="5"
+    )
+
+    socket, _ = await connect_participant(room, owner)
+    joined_voting = await wait_for(socket, "participant.joined")
+    assert joined_voting["participant"]["has_voted"] is True
+    assert joined_voting["participant"]["current_vote"] is None
+    assert joined_voting["participant"]["is_facilitator"] is True
+
+    await socket.send_json_to({"type": "room.reveal"})
+    await wait_for(socket, "room.revealed")
+    await socket.disconnect()
+
+    reconnected, state = await connect_participant(room, owner)
+    assert state["room"]["voting_status"] == "revealed"
+    joined_revealed = await wait_for(reconnected, "participant.joined")
+    assert joined_revealed["participant"]["has_voted"] is True
+    assert joined_revealed["participant"]["current_vote"] == "5"
+    assert joined_revealed["participant"]["is_facilitator"] is True
+
+    await reconnected.disconnect()

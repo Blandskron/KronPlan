@@ -1,4 +1,4 @@
-# Seguridad en Planning Pocket
+# Seguridad en KronPlan
 
 Dado el enfoque colaborativo de la herramienta, se han identificado las siguientes consideraciones de seguridad.
 
@@ -91,7 +91,7 @@ nodo a nodo con `setAttribute`.
 - **Mitigación:** `is_facilitator` viaja en el estado del participante —no es secreto, sus
   controles se ven— y la mesa dibuja la marca en el asiento.
 
-## 7. Configuración de producción
+## 12. Configuración de producción
 
 - `DJANGO_SECRET_KEY` y `DJANGO_ALLOWED_HOSTS` son obligatorios con `DJANGO_DEBUG=False`; no hay
   valores de respaldo inseguros.

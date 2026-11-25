@@ -1,10 +1,22 @@
 # Changelog
 
-Todas las novedades relevantes de Planning Pocket, en formato
+Todas las novedades relevantes de **KronPlan** (antes Planning Pocket), en formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 El proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
+
+### Añadido
+- Identidad oficial **KronPlan — Agile Planning & Estimation** (*Plan together. Build better.* · *Open Source · By BLANDSKRON*).
+- Activos vectoriales originales en `static/brand/` (isotipo `K` + cartas, logos dark/light, variantes monocromáticas, favicon SVG y tarjeta social Open Graph).
+- Documentación de identidad y sistema visual en `docs/BRAND_GUIDELINES.md`, `docs/DESIGN_SYSTEM.md` y `ADR-009` (`docs/DECISIONS.md`).
+- Landing page pública en `/` para visitantes no autenticados, métricas Bento Grid en el dashboard y tema de 3 estados (`dark` por defecto, `light`, `system`) con migración retrocompatible de preferencias.
+- Sprite centralizado de iconografía Lucide SVG (`templates/partials/_icons.html`) y atajos de teclado opcionales en la baraja (`0–9`, `?`, flechas).
+
+### Cambiado
+- Capa de tokens CSS en `static/css/style.css` migrada a primitivas `--kp-*`, tipografía `Sora` / `Inter` / `JetBrains Mono` y contraste calibrado WCAG 2.2 AA.
+- En móvil dentro de la sala, la barra inferior de navegación y la mano de cartas se apilan ordenadamente sin ocultarse ni taparse.
+- Corregido el solapamiento de `.auth-deck` sobre el texto en la pantalla de ingreso.
 
 ## [1.0.1] - 2026-11-10
 
@@ -63,6 +75,6 @@ llamarla por su nombre y validar cada cambio antes de que llegue a `main`.
 - `djangorestframework`, que estaba instalado y declarado sin ningún uso: no hay
   serializadores, vistas ni rutas de DRF en el proyecto.
 
-[Sin publicar]: https://github.com/Blandskron/planning-pocket/compare/v1.0.1...HEAD
-[1.0.1]: https://github.com/Blandskron/planning-pocket/releases/tag/v1.0.1
-[1.0.0]: https://github.com/Blandskron/planning-pocket/releases/tag/v1.0.0
+[Sin publicar]: https://github.com/Blandskron/KronPlan/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/Blandskron/KronPlan/releases/tag/v1.0.1
+[1.0.0]: https://github.com/Blandskron/KronPlan/releases/tag/v1.0.0

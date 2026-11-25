@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KronPlan — Agile Planning &amp; Estimation · Open Source by BLANDSKRON</title>
+    <meta name="description" content="KronPlan (Plan together. Build better.): plataforma open source de Planning Poker y estimación ágil en tiempo real con privacidad garantizada en servidor. By BLANDSKRON.">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="KronPlan — Agile Planning &amp; Estimation">
+    <meta property="og:description" content="Estimación ágil en tiempo real sin ruido ni sesgos de anclaje. Django + Channels + WebSockets nativos.">
+    <meta property="og:image" content="./static/brand/social-card.svg">
+    <meta name="theme-color" content="#0D1020" id="theme-color-meta">
+    <link rel="icon" type="image/svg+xml" href="./static/brand/favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+    <script>
+        (function () {
+            var meta = document.getElementById('theme-color-meta');
+            var saved = 'dark';
+            try {
+                saved = localStorage.getItem('kronplan-theme') || 'dark';
+            } catch (_) {}
+            var mode = ['dark', 'light', 'system'].indexOf(saved) >= 0 ? saved : 'dark';
+            var prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+            var resolved = mode === 'system' ? (prefersLight ? 'light' : 'dark') : mode;
+            document.documentElement.dataset.themeMode = mode;
+            document.documentElement.dataset.theme = resolved;
+            if (meta) meta.content = resolved === 'light' ? '#F5F7FB' : '#0D1020';
+        })();
+    </script>
+    <style>
+        /* =====================================================================
+           KronPlan Design System — Layer 1: Brand & System Primitives (--kp-*)
+           ===================================================================== */
+        :root {
+            --kp-violet-400: #A78BFA;
+            --kp-purple-600: #7C3AED;
+            --kp-purple-700: #6D28D9;
+            --kp-indigo-500: #6366F1;
+            --kp-indigo-600: #4F46E5;
+            --kp-cyan-400: #22D3EE;
+            --kp-cyan-700: #0E7490;
+            --kp-lavender-200: #DDD6FE;
+
+            --kp-neutral-950: #0D1020;
+            --kp-neutral-900: #17182D;
+            --kp-neutral-850: #211F38;
+            --kp-neutral-700: #34314D;
+            --kp-neutral-300: #B8B3CD;
+            --kp-neutral-50: #F5F7FB;
+
+            --kp-success: #22C55E;
+            --kp-success-light: #15803D;
+            --kp-warning: #F59E0B;
+            --kp-warning-light: #B45309;
+            --kp-error-text: #F87171;
+            --kp-error-light: #DC2626;
+            --kp-info: #38BDF8;
+            --kp-consensus: #14B8A6;
+            --kp-consensus-light: #0F766E;
+            --kp-inactive-dark: #94A3B8;
+            --kp-inactive-light: #475569;
+
+            --kp-space-1: 4px;
+            --kp-space-2: 8px;
+            --kp-space-3: 12px;
+            --kp-space-4: 16px;
+            --kp-space-5: 20px;
+            --kp-space-6: 24px;
+            --kp-space-8: 32px;
+            --kp-space-10: 40px;
+            --kp-space-12: 48px;
+            --kp-space-16: 64px;
+
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 24px;
+            --radius-pill: 999px;
+
+            --font-display: 'Sora', ui-sans-serif, system-ui, -apple-system, sans-serif;
+            --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+            --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+
+            --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+            --dur-fast: 0.16s;
+            --dur-mid: 0.24s;
+
+            /* Layer 2: Semantic Tokens — Dark Mode (Default) */
+            --bg: var(--kp-neutral-950);
+            --bg-elevated: var(--kp-neutral-900);
+            --surface: rgba(23, 24, 45, 0.84);
+            --surface-solid: var(--kp-neutral-850);
+            --surface-inset: rgba(13, 16, 32, 0.68);
+            --chrome: rgba(13, 16, 32, 0.78);
+            --border: rgba(167, 139, 250, 0.16);
+            --border-strong: rgba(167, 139, 250, 0.34);
+
+            --text: var(--kp-neutral-50);
+            --text-soft: var(--kp-neutral-300);
+            --muted: var(--kp-inactive-dark);
+
+            --primary: var(--kp-purple-600);
+            --primary-hover: var(--kp-purple-700);
+            --accent: var(--kp-violet-400);
+            --accent-soft: rgba(167, 139, 250, 0.14);
+            --cyan: var(--kp-cyan-400);
+            --cyan-soft: rgba(34, 211, 238, 0.12);
+            --consensus: var(--kp-consensus);
+            --consensus-soft: rgba(20, 184, 166, 0.14);
+            --success: var(--kp-success);
+            --ring: var(--kp-lavender-200);
+
+            --shadow-card: 0 20px 50px rgba(3, 5, 16, 0.52), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            --shadow-glow: 0 12px 32px rgba(124, 58, 237, 0.36);
+        }
+
+        [data-theme="light"] {
+            --bg: var(--kp-neutral-50);
+            --bg-elevated: #FFFFFF;
+            --surface: rgba(255, 255, 255, 0.9);
+            --surface-solid: #FFFFFF;
+            --surface-inset: #EEF1F8;
+            --chrome: rgba(245, 247, 251, 0.84);
+            --border: rgba(52, 49, 77, 0.13);
+            --border-strong: rgba(109, 40, 217, 0.28);
+
+            --text: #121024;
+            --text-soft: #3D3856;
+            --muted: var(--kp-inactive-light);
+
+            --primary: var(--kp-purple-600);
+            --primary-hover: var(--kp-purple-700);
+            --accent: var(--kp-purple-700);
+            --accent-soft: rgba(109, 40, 217, 0.1);
+            --cyan: var(--kp-cyan-700);
+            --cyan-soft: rgba(14, 116, 144, 0.1);
+            --consensus: var(--kp-consensus-light);
+            --consensus-soft: rgba(15, 118, 110, 0.1);
+            --success: var(--kp-success-light);
+            --ring: var(--kp-purple-700);
+
+            --shadow-card: 0 16px 40px rgba(18, 16, 36, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+            --shadow-glow: 0 10px 28px rgba(124, 58, 237, 0.24);
+        }
+
+        *, *::before, *::after { box-sizing: border-box; }
+        [hidden] { display: none !important; }
+        html { scroll-behavior: smooth; }
+        body {
+            margin: 0;
+            min-height: 100dvh;
+            font-family: var(--font-sans);
+            color: var(--text);
+            background-color: var(--bg);
+            background-image:
+                radial-gradient(ellipse 80% 55% at 15% -10%, rgba(124, 58, 237, 0.22), transparent 60%),
+                radial-gradient(ellipse 65% 45% at 88% 8%, rgba(34, 211, 238, 0.12), transparent 55%),
+                radial-gradient(ellipse 70% 50% at 50% 105%, rgba(99, 102, 241, 0.14), transparent 60%);
+            background-attachment: fixed;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+        [data-theme="light"] body {
+            background-image:
+                radial-gradient(ellipse 80% 55% at 15% -10%, rgba(124, 58, 237, 0.1), transparent 60%),
+                radial-gradient(ellipse 65% 45% at 88% 8%, rgba(34, 211, 238, 0.1), transparent 55%);
+        }
+
+        img { display: block; max-width: 100%; height: auto; }
+        a { color: inherit; }
+        button { font: inherit; color: inherit; cursor: pointer; }
+        :focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+
+        .container {
+            width: min(1220px, calc(100% - 32px));
+            margin-inline: auto;
+        }
+        .kp-icon {
+            width: 18px;
+            height: 18px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 1.9;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            flex-shrink: 0;
+        }
+        .kp-glass {
+            min-width: 0;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-card);
+            backdrop-filter: blur(18px) saturate(1.3);
+        }
+        .kp-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--kp-space-2);
+            padding: 6px 12px;
+            border-radius: var(--radius-pill);
+            border: 1px solid var(--border-strong);
+            background: var(--accent-soft);
+            color: var(--accent);
+            font-size: 0.78rem;
+            font-weight: 600;
+            letter-spacing: 0.01em;
+        }
+        .kp-badge.is-cyan {
+            border-color: color-mix(in srgb, var(--cyan) 36%, transparent);
+            background: var(--cyan-soft);
+            color: var(--cyan);
+        }
+        .kp-badge.is-consensus {
+            border-color: color-mix(in srgb, var(--consensus) 36%, transparent);
+            background: var(--consensus-soft);
+            color: var(--consensus);
+        }
+        .eyebrow {
+            display: inline-block;
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.09em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: var(--kp-space-2);
+        }
+
+        /* Header */
+        .app-topbar {
+            position: sticky;
+            top: 0;
+            z-index: 40;
+            background: var(--chrome);
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(20px) saturate(1.35);
+        }
+        .topbar-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: var(--kp-space-4);
+            min-height: 68px;
+        }
+        .brand-link {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--kp-space-3);
+            text-decoration: none;
+            flex-shrink: 0;
+        }
+        .brand-link img { width: 38px; height: 38px; border-radius: 10px; }
+        .brand-text strong {
+            display: block;
+            font-family: var(--font-display);
+            font-size: 1.08rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            line-height: 1.1;
+        }
+        .brand-text span {
+            display: block;
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            letter-spacing: 0.09em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-top: 2px;
+        }
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: var(--kp-space-6);
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+        .nav-links a {
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-soft);
+            transition: color var(--dur-fast) var(--ease);
+        }
+        .nav-links a:hover { color: var(--accent); }
+        .topbar-actions {
+            display: flex;
+            align-items: center;
+            gap: var(--kp-space-2);
+        }
+
+        /* Buttons */
+        .button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--kp-space-2);
+            padding: 10px 18px;
+            border-radius: var(--radius-pill);
+            border: 1px solid transparent;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-decoration: none;
+            transition: transform var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+        }
+        .button:hover { transform: translateY(-1px); }
+        .button-primary {
+            background: var(--primary);
+            color: #FFFFFF;
+            box-shadow: var(--shadow-glow);
+        }
+        .button-primary:hover { background: var(--primary-hover); }
+        .button-secondary {
+            background: var(--surface-solid);
+            border-color: var(--border-strong);
+            color: var(--text);
+        }
+        .button-secondary:hover { border-color: var(--accent); }
+        .theme-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 13px;
+            border-radius: var(--radius-pill);
+            border: 1px solid var(--border);
+            background: var(--surface-solid);
+            color: var(--text-soft);
+            font-size: 0.82rem;
+            font-weight: 600;
+            transition: border-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+        }
+        .theme-btn:hover { border-color: var(--accent); color: var(--text); }
+
+        /* Hero */
+        .hero {
+            padding: var(--kp-space-12) 0 var(--kp-space-10);
+            display: grid;
+            grid-template-columns: minmax(0, 1.02fr) minmax(0, 1.15fr);
+            gap: var(--kp-space-8);
+            align-items: center;
+        }
+        .hero > div { min-width: 0; }
+        .hero h1 {
+            font-family: var(--font-display);
+            font-size: clamp(2.4rem, 4.6vw, 3.85rem);
+            font-weight: 800;
+            line-height: 1.04;
+            letter-spacing: -0.035em;
+            margin: var(--kp-space-4) 0;
+        }
+        .hero h1 span {
+            background: linear-gradient(125deg, var(--kp-violet-400), var(--kp-cyan-400));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        [data-theme="light"] .hero h1 span {
+            background: linear-gradient(125deg, var(--kp-purple-700), var(--kp-indigo-600));
+            -webkit-background-clip: text;
+            background-clip: text;
+        }
+        .hero-lead {
+            font-size: 1.06rem;
+            color: var(--text-soft);
+            margin: 0 0 var(--kp-space-6);
+            max-width: 54ch;
+        }
+        .hero-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--kp-space-3);
+            margin-bottom: var(--kp-space-6);
+        }
+        .hero-trust {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--kp-space-4);
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-soft);
+        }
+        .hero-trust li { display: inline-flex; align-items: center; gap: 6px; }
+        .hero-trust svg { color: var(--consensus); }
+
+        .hero-stage {
+            padding: var(--kp-space-4);
+            display: flex;
+            flex-direction: column;
+            gap: var(--kp-space-3);
+        }
+        .hero-stage-head {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: var(--kp-space-2);
+        }
+        .pill-group {
+            display: inline-flex;
+            padding: 3px;
+            border-radius: var(--radius-pill);
+            background: var(--surface-inset);
+            border: 1px solid var(--border);
+            gap: 2px;
+        }
+        .pill-btn {
+            padding: 6px 12px;
+            border: 0;
+            border-radius: var(--radius-pill);
+            background: transparent;
+            color: var(--text-soft);
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+        }
+        .pill-btn[aria-pressed="true"] {
+            background: var(--primary);
+            color: #FFFFFF;
+        }
+
+        /* Section headers */
+        .section { padding: var(--kp-space-12) 0; }
+        .section-head {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: var(--kp-space-4);
+            margin-bottom: var(--kp-space-6);
+        }
+        .section-head h2 {
+            font-family: var(--font-display);
+            font-size: clamp(1.6rem, 3vw, 2.3rem);
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            line-height: 1.15;
+            margin: 0;
+        }
+        .section-sub {
+            margin: var(--kp-space-2) 0 0;
+            color: var(--text-soft);
+            max-width: 60ch;
+            font-size: 0.96rem;
+        }
+
+        /* Browser / Phone mockups */
+        .browser-frame {
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border);
+            background: var(--surface-inset);
+            overflow: hidden;
+        }
+        .browser-chrome {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: var(--kp-space-3);
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-elevated);
+        }
+        .browser-dots { display: inline-flex; gap: 6px; }
+        .browser-dots span { width: 9px; height: 9px; border-radius: 50%; background: var(--border-strong); }
+        .browser-dots span:nth-child(1) { background: #F87171; }
+        .browser-dots span:nth-child(2) { background: #FBBF24; }
+        .browser-dots span:nth-child(3) { background: #22C55E; }
+        .browser-url {
+            font-family: var(--font-mono);
+            font-size: 0.74rem;
+            color: var(--muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .zoom-trigger {
+            display: block;
+            width: 100%;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            text-align: left;
+            position: relative;
+        }
+        .zoom-hint {
+            position: absolute;
+            right: 12px;
+            bottom: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 11px;
+            border-radius: var(--radius-pill);
+            background: rgba(13, 16, 32, 0.84);
+            border: 1px solid rgba(221, 214, 254, 0.25);
+            color: #F5F7FB;
+            font-size: 0.74rem;
+            font-weight: 600;
+            opacity: 0;
+            transform: translateY(4px);
+            transition: opacity var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+            pointer-events: none;
+        }
+        .zoom-trigger:hover .zoom-hint,
+        .zoom-trigger:focus-visible .zoom-hint { opacity: 1; transform: translateY(0); }
+
+        /* Product Flow Interactive Stage */
+        .flow-grid {
+            display: grid;
+            grid-template-columns: 330px minmax(0, 1fr);
+            gap: var(--kp-space-6);
+            align-items: start;
+        }
+        .flow-steps {
+            display: flex;
+            flex-direction: column;
+            gap: var(--kp-space-2);
+            padding: var(--kp-space-3);
+        }
+        .flow-step-btn {
+            display: grid;
+            grid-template-columns: 32px minmax(0, 1fr);
+            align-items: center;
+            gap: var(--kp-space-3);
+            padding: 10px 12px;
+            border-radius: var(--radius-md);
+            border: 1px solid transparent;
+            background: transparent;
+            text-align: left;
+            transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+        }
+        .flow-step-btn:hover { background: var(--surface-inset); }
+        .flow-step-btn[aria-selected="true"] {
+            background: var(--accent-soft);
+            border-color: var(--border-strong);
+        }
+        .step-num {
+            display: grid;
+            place-items: center;
+            width: 32px;
+            height: 32px;
+            border-radius: var(--radius-sm);
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            font-weight: 700;
+            background: var(--surface-inset);
+            color: var(--text-soft);
+            border: 1px solid var(--border);
+        }
+        .flow-step-btn[aria-selected="true"] .step-num {
+            background: var(--primary);
+            color: #FFFFFF;
+            border-color: transparent;
+        }
+        .flow-step-btn strong {
+            display: block;
+            font-size: 0.88rem;
+            font-weight: 600;
+            line-height: 1.25;
+        }
+        .flow-step-btn small {
+            display: block;
+            font-size: 0.76rem;
+            color: var(--muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .flow-viewer { padding: var(--kp-space-4); }
+        .flow-meta {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: var(--kp-space-4);
+            margin-top: var(--kp-space-4);
+        }
+        .flow-meta h3 {
+            font-family: var(--font-display);
+            font-size: 1.2rem;
+            margin: 0 0 4px;
+        }
+        .flow-meta p {
+            margin: 0;
+            color: var(--text-soft);
+            font-size: 0.92rem;
+            max-width: 62ch;
+        }
+        .flow-pager { display: inline-flex; gap: var(--kp-space-2); }
+
+        /* Multi-Mode Matrix Gallery */
+        .matrix-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: var(--kp-space-3);
+            padding: var(--kp-space-4);
+            margin-bottom: var(--kp-space-5);
+        }
+        .screen-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--kp-space-2);
+        }
+        .screen-tab {
+            padding: 8px 14px;
+            border-radius: var(--radius-pill);
+            border: 1px solid var(--border);
+            background: var(--surface-inset);
+            color: var(--text-soft);
+            font-size: 0.84rem;
+            font-weight: 600;
+            transition: all var(--dur-fast) var(--ease);
+        }
+        .screen-tab:hover { border-color: var(--accent); color: var(--text); }
+        .screen-tab[aria-selected="true"] {
+            background: var(--primary);
+            border-color: transparent;
+            color: #FFFFFF;
+            box-shadow: var(--shadow-glow);
+        }
+        .matrix-toggles {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--kp-space-2);
+            align-items: center;
+        }
+        .matrix-stage {
+            padding: var(--kp-space-5);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: var(--kp-space-4);
+        }
+        .matrix-stage .browser-frame { width: 100%; }
+        .matrix-stage .browser-frame.is-mobile {
+            width: min(370px, 100%);
+            border-radius: 28px;
+            border: 6px solid var(--kp-neutral-700);
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+        }
+        .matrix-caption {
+            width: 100%;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: var(--kp-space-3);
+            color: var(--text-soft);
+            font-size: 0.88rem;
+        }
+        .matrix-caption code {
+            max-width: 100%;
+            overflow-wrap: anywhere;
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            padding: 4px 10px;
+            border-radius: var(--radius-sm);
+            background: var(--surface-inset);
+            border: 1px solid var(--border);
+            color: var(--accent);
+        }
+
+        /* Bento Architecture & Deploy */
+        .kp-bento {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: var(--kp-space-4);
+        }
+        .bento-card { padding: var(--kp-space-6); }
+        .bento-card h3 {
+            font-family: var(--font-display);
+            font-size: 1.05rem;
+            margin: var(--kp-space-3) 0 var(--kp-space-2);
+        }
+        .bento-card p { margin: 0; font-size: 0.9rem; color: var(--text-soft); }
+        .bento-icon {
+            display: inline-grid;
+            place-items: center;
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-md);
+            background: var(--accent-soft);
+            color: var(--accent);
+            border: 1px solid var(--border-strong);
+        }
+        .bento-icon.is-cyan {
+            background: var(--cyan-soft);
+            color: var(--cyan);
+            border-color: color-mix(in srgb, var(--cyan) 36%, transparent);
+        }
+        .bento-icon.is-consensus {
+            background: var(--consensus-soft);
+            color: var(--consensus);
+            border-color: color-mix(in srgb, var(--consensus) 36%, transparent);
+        }
+
+        .deploy-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: var(--kp-space-4);
+        }
+        .code-card { padding: var(--kp-space-6); min-width: 0; }
+        .code-card h3 {
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            margin: 0 0 var(--kp-space-2);
+        }
+        .code-card p { margin: 0 0 var(--kp-space-4); font-size: 0.9rem; color: var(--text-soft); }
+        .code-box {
+            position: relative;
+            max-width: 100%;
+            padding: var(--kp-space-4);
+            padding-top: var(--kp-space-10);
+            border-radius: var(--radius-md);
+            background: var(--kp-neutral-950);
+            border: 1px solid var(--kp-neutral-700);
+            color: var(--kp-neutral-50);
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            line-height: 1.55;
+            overflow-x: auto;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 5px 10px;
+            border-radius: var(--radius-sm);
+            border: 1px solid rgba(167, 139, 250, 0.35);
+            background: rgba(33, 31, 56, 0.9);
+            color: #DDD6FE;
+            font-family: var(--font-sans);
+            font-size: 0.74rem;
+            font-weight: 600;
+        }
+        .copy-btn:hover { background: var(--primary); color: #FFFFFF; }
+
+        /* Lightbox */
+        dialog.lightbox {
+            width: min(1160px, 95vw);
+            max-height: 92dvh;
+            padding: var(--kp-space-4);
+            border-radius: var(--radius-xl);
+            border: 1px solid var(--border-strong);
+            background: var(--bg-elevated);
+            color: var(--text);
+            box-shadow: 0 32px 80px rgba(0, 0, 0, 0.65);
+        }
+        dialog.lightbox::backdrop {
+            background: rgba(6, 8, 18, 0.82);
+            backdrop-filter: blur(8px);
+        }
+        .lightbox-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: var(--kp-space-3);
+            margin-bottom: var(--kp-space-3);
+        }
+        .lightbox-head strong { font-family: var(--font-display); font-size: 1rem; }
+        .lightbox-body {
+            display: flex;
+            justify-content: center;
+            max-height: calc(92dvh - 88px);
+            overflow: auto;
+            border-radius: var(--radius-md);
+        }
+        .lightbox-body img {
+            max-height: calc(92dvh - 96px);
+            width: auto;
+            border-radius: var(--radius-md);
+        }
+
+        /* Footer */
+        .site-footer {
+            margin-top: var(--kp-space-10);
+            padding: var(--kp-space-6) 0 var(--kp-space-10);
+            border-top: 1px solid var(--border);
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: var(--kp-space-4);
+            font-size: 0.85rem;
+            color: var(--muted);
+        }
+        .footer-links { display: flex; flex-wrap: wrap; gap: var(--kp-space-4); }
+        .footer-links a { text-decoration: none; font-weight: 500; }
+        .footer-links a:hover { color: var(--accent); }
+
+        @media (max-width: 980px) {
+            .hero, .flow-grid { grid-template-columns: 1fr; }
+            .kp-bento { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .flow-steps {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+        @media (max-width: 720px) {
+            .nav-links { display: none; }
+            .brand-text span { display: none; }
+            .kp-bento, .deploy-grid, .flow-steps { grid-template-columns: 1fr; }
+            .hero { padding-top: var(--kp-space-8); }
+            .topbar-actions .button-secondary { display: none; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <svg xmlns="http://www.w3.org/2000/svg" hidden aria-hidden="true">
+        <symbol id="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32 1.41-1.41"/></symbol>
+        <symbol id="icon-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></symbol>
+        <symbol id="icon-monitor" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/></symbol>
+        <symbol id="icon-shield-check" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></symbol>
+        <symbol id="icon-wifi" viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></symbol>
+        <symbol id="icon-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+        <symbol id="icon-sparkles" viewBox="0 0 24 24"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3L12 3z"/></symbol>
+        <symbol id="icon-layers" viewBox="0 0 24 24"><path d="m12 2 10 5-10 5L2 7l10-5z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/></symbol>
+        <symbol id="icon-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+        <symbol id="icon-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14m-7-7 7 7-7 7"/></symbol>
+        <symbol id="icon-arrow-left" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M19 12H5"/></symbol>
+        <symbol id="icon-maximize" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></symbol>
+        <symbol id="icon-smartphone" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></symbol>
+        <symbol id="icon-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+    </svg>
+
+    <header class="app-topbar">
+        <div class="container topbar-inner">
+            <a class="brand-link" href="#top">
+                <img src="./static/brand/kronplan-mark.svg" alt="" width="38" height="38">
+                <span class="brand-text">
+                    <strong>KronPlan</strong>
+                    <span>Agile Planning &amp; Estimation</span>
+                </span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="#flujo">Flujo en vivo</a></li>
+                <li><a href="#vistas">Oscuro / Claro · Móvil</a></li>
+                <li><a href="#arquitectura">Arquitectura</a></li>
+                <li><a href="#despliegue">Despliegue</a></li>
+            </ul>
+            <div class="topbar-actions">
+                <a class="button button-secondary" href="https://github.com/Blandskron/KronPlan" target="_blank" rel="noopener">GitHub</a>
+                <button type="button" class="theme-btn" id="theme-toggle" aria-label="Cambiar tema visual">
+                    <svg class="kp-icon" viewBox="0 0 24 24" aria-hidden="true"><use id="theme-icon" href="#icon-moon"></use></svg>
+                    <span id="theme-label">Oscuro</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main id="top" class="container">
+        <section class="hero">
+            <div>
+                <span class="kp-badge is-cyan">
+                    <svg class="kp-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-sparkles"></use></svg>
+                    Open Source · By BLANDSKRON
+                </span>
+                <h1>Plan together.<br><span>Build better.</span></h1>
+                <p class="hero-lead">
+                    Planning Poker open source en tiempo real con privacidad garantizada en el servidor.
+                    Django, Channels, WebSockets y un sistema de diseño nativo calibrado WCAG 2.2 AA sin frameworks SPA.
+                </p>
+                <div class="hero-actions">
+                    <a class="button button-primary" href="#flujo">
+                        Explorar flujo completo
+                        <svg class="kp-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
+                    </a>
+                    <a class="button button-secondary" href="https://github.com/Blandskron/KronPlan" target="_blank" rel="noopener">Repositorio en GitHub</a>
+                </div>
+                <ul class="hero-trust">
+                    <li><svg class="kp-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-shield-check"></use></svg> Cero votos filtrados antes del reveal</li>
+                    <li><svg class="kp-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-users"></use></svg> Invitados con enlace y nombre</li>
+                    <li><svg class="kp-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-wifi"></use></svg> Django Channels + Redis</li>
+                </ul>
+            </div>
+
+            <div class="kp-glass hero-stage">
+                <div class="hero-stage-head">
+                    <span class="kp-badge is-consensus">Captura real · Mesa interactiva</span>
+                    <div class="pill-group" role="group" aria-label="Estado de la mesa en portada">
+                        <button type="button" class="pill-btn" data-hero-state="voting" aria-pressed="true">Votando</button>
+                        <button type="button" class="pill-btn" data-hero-state="revealed" aria-pressed="false">Revelado</button>
+                    </div>
+                </div>
+                <div class="browser-frame">
+                    <div class="browser-chrome">
+                        <span class="browser-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+                        <span class="browser-url" id="hero-url">kronplan.app/p/8gGv0aTF14/</span>
+                    </div>
+                    <button type="button" class="zoom-trigger" id="hero-zoom" aria-label="Ampliar captura de portada">
+                        <img id="hero-img" src="./docs/screenshots/views/room-voting-desktop-dark.png" alt="Mesa colaborativa de KronPlan durante una votación activa">
+                        <span class="zoom-hint"><svg class="kp-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-maximize"></use></svg> Ampliar</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="flujo" aria-labelledby="flow-title">
+            <div class="section-head">
+                <div>
+                    <span class="eyebrow">Recorrido de punta a punta</span>
+                    <h2 id="flow-title">El flujo completo del producto en vivo</h2>
+                    <p class="section-sub">Capturas reales sobre Daphne ASGI + WebSockets con 5 participantes simultáneos: desde la portada hasta el consenso, distribución dividida y cierre de sesión.</p>
+                </div>
+            </div>
+
+            <div class="flow-grid">
+                <div class="kp-glass flow-steps" role="tablist" aria-label="Pasos del flujo de producto" id="flow-tablist"></div>
+
+                <div class="kp-glass flow-viewer">
+                    <div class="browser-frame">
+                        <div class="browser-chrome">
+                            <span class="browser-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+                            <span class="browser-url" id="flow-url">kronplan.app/</span>
+                        </div>
+                        <button type="button" class="zoom-trigger" id="flow-zoom" aria-label="Ampliar captura del paso actual">
+                            <img id="flow-img" src="./docs/screenshots/views/landing-desktop-dark.png" alt="Paso 1: Portada pública de KronPlan">
+                            <span class="zoom-hint"><svg class="kp-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-maximize"></use></svg> Ver completa</span>
+                        </button>
+                    </div>
+                    <div class="flow-meta">
+                        <div>
+                            <span class="kp-badge" id="flow-badge">Paso 01 / 10</span>
+                            <h3 id="flow-step-title">Portada pública para visitantes anónimos</h3>
+                            <p id="flow-step-desc">Quien llega sin sesión ve la propuesta de valor, el flujo en tres pasos y accesos directos para crear cuenta de facilitador o ingresar.</p>
+                        </div>
+                        <div class="flow-pager">
+                            <button type="button" class="button button-secondary" id="flow-prev" aria-label="Paso anterior">
+                                <svg class="kp-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-left"></use></svg>
+                                Anterior
+                            </button>
+                            <button type="button" class="button button-primary" id="flow-next" aria-label="Siguiente paso">
+                                Siguiente
+                                <svg class="kp-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="vistas" aria-labelledby="matrix-title">
+            <div class="section-head">
+                <div>
+                    <span class="eyebrow">Design System multi-superficie</span>
+                    <h2 id="matrix-title">Oscuro, Claro, Desktop y Móvil</h2>
+                    <p class="section-sub">Inspecciona cada pantalla en los 4 modos oficiales. Dark Mode como lectura canónica, Light Mode de alto contraste y shell móvil apilado para votar con una mano.</p>
+                </div>
+            </div>
+
+            <div class="kp-glass matrix-toolbar">
+                <div class="screen-tabs" role="tablist" aria-label="Pantallas disponibles" id="matrix-screens"></div>
+                <div class="matrix-toggles">
+                    <div class="pill-group" role="group" aria-label="Tema de la captura">
+                        <button type="button" class="pill-btn" data-matrix-theme="dark" aria-pressed="true">
+                            <svg class="kp-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-moon"></use></svg> Oscuro
+                        </button>
+                        <button type="button" class="pill-btn" data-matrix-theme="light" aria-pressed="false">
+                            <svg class="kp-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-sun"></use></svg> Claro
+                        </button>
+                    </div>
+                    <div class="pill-group" role="group" aria-label="Resolución de la captura">
+                        <button type="button" class="pill-btn" data-matrix-device="desktop" aria-pressed="true">
+                            <svg class="kp-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-monitor"></use></svg> Desktop
+                        </button>
+                        <button type="button" class="pill-btn" data-matrix-device="mobile" aria-pressed="false">
+                            <svg class="kp-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-smartphone"></use></svg> Móvil
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="kp-glass matrix-stage">
+                <div class="browser-frame" id="matrix-frame">
+                    <div class="browser-chrome">
+                        <span class="browser-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+                        <span class="browser-url" id="matrix-url">1440×900 · Tema Oscuro</span>
+                    </div>
+                    <button type="button" class="zoom-trigger" id="matrix-zoom" aria-label="Ampliar captura seleccionada">
+                        <img id="matrix-img" src="./docs/screenshots/views/room-voting-desktop-dark.png" alt="Captura de pantalla de KronPlan">
+                        <span class="zoom-hint"><svg class="kp-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-maximize"></use></svg> Ver completa</span>
+                    </button>
+                </div>
+                <div class="matrix-caption">
+                    <span id="matrix-desc">Mesa interactiva con 5 participantes alrededor del anillo elíptico y privacidad de votos activa.</span>
+                    <code id="matrix-file">docs/screenshots/views/room-voting-desktop-dark.png</code>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="arquitectura" aria-labelledby="arch-title">
+            <div class="section-head">
+                <div>
+                    <span class="eyebrow">Ingeniería y UX</span>
+                    <h2 id="arch-title">Simple por diseño, estricto en garantías</h2>
+                    <p class="section-sub">Sin frameworks SPA en el navegador ni estados duplicados: cada transición crítica se decide en Django y se difunde por WebSocket.</p>
+                </div>
+            </div>
+
+            <div class="kp-bento">
+                <article class="kp-glass bento-card">
+                    <span class="bento-icon"><svg class="kp-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-shield-check"></use></svg></span>
+                    <h3>Privacidad de votos en servidor</h3>
+                    <p>Antes del reveal, ningún payload WebSocket ni respuesta HTTP expone votos ajenos; solo el estado de interacción (<code>has_voted</code>).</p>
+                </article>
+                <article class="kp-glass bento-card">
+                    <span class="bento-icon is-cyan"><svg class="kp-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-wifi"></use></svg></span>
+                    <h3>Tiempo real con Channels + Redis</h3>
+                    <p>Sincronización instantánea de asientos, cartas, cola de historias, reconexión multi-pestaña y cierre de sala vía ASGI/Daphne.</p>
+                </article>
+                <article class="kp-glass bento-card">
+                    <span class="bento-icon"><svg class="kp-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-layers"></use></svg></span>
+                    <h3>Frontend nativo sin build bloat</h3>
+                    <p>Django Templates, CSS con capas <code>--kp-*</code> y Vanilla JavaScript con Content-Security-Policy estricta basada en nonce.</p>
+                </article>
+                <article class="kp-glass bento-card">
+                    <span class="bento-icon is-consensus"><svg class="kp-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-sparkles"></use></svg></span>
+                    <h3>Identidad y gamificación opcional</h3>
+                    <p>Mascotas SVG originales, 7 colores de asiento, lanzamientos cosméticos con rate-limit en servidor y modo recreo desactivables.</p>
+                </article>
+                <article class="kp-glass bento-card">
+                    <span class="bento-icon is-cyan"><svg class="kp-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-smartphone"></use></svg></span>
+                    <h3>WCAG 2.2 AA &amp; Carcasa Móvil</h3>
+                    <p>Contrastes verificados sobre DOM real, atajos de teclado (<code>0–8</code>, <code>?</code>, flechas), <code>prefers-reduced-motion</code> y baraja apilada al pulgar.</p>
+                </article>
+                <article class="kp-glass bento-card">
+                    <span class="bento-icon"><svg class="kp-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-check"></use></svg></span>
+                    <h3>Quality Gates automatizados</h3>
+                    <p>Ruff, Pytest + Channels, Playwright E2E, <code>axe-core</code>, Lighthouse, <code>check --deploy</code> y arranque verificado en contenedor Docker.</p>
+                </article>
+            </div>
+        </section>
+
+        <section class="section" id="despliegue" aria-labelledby="deploy-title">
+            <div class="section-head">
+                <div>
+                    <span class="eyebrow">Autoalojamiento Open Source</span>
+                    <h2 id="deploy-title">Levanta tu instancia en minutos</h2>
+                    <p class="section-sub">Ejecuta KronPlan en local para desarrollo o despliégalo en producción con Docker Compose, PostgreSQL y Redis.</p>
+                </div>
+            </div>
+
+            <div class="deploy-grid">
+                <article class="kp-glass code-card">
+                    <h3>Producción con Docker Compose</h3>
+                    <p>Incluye PostgreSQL, Redis para Django Channels, Daphne ASGI y endurecimiento de seguridad con <code>DJANGO_DEBUG=False</code>.</p>
+                    <pre class="code-box"><button type="button" class="copy-btn" data-copy="git clone https://github.com/Blandskron/KronPlan.git&#10;cd KronPlan&#10;cp .env.example .env&#10;docker compose up --build -d">Copiar</button>git clone https://github.com/Blandskron/KronPlan.git
+cd KronPlan
+cp .env.example .env
+docker compose up --build -d</pre>
+                </article>
+                <article class="kp-glass code-card">
+                    <h3>Desarrollo local (Python 3.12+)</h3>
+                    <p>Cero compiladores Node o bundlers: instala dependencias Python, aplica migraciones y arranca el servidor en vivo.</p>
+                    <pre class="code-box"><button type="button" class="copy-btn" data-copy="python -m venv .venv&#10;. .venv/bin/activate&#10;pip install -r requirements-dev.txt&#10;python manage.py migrate &amp;&amp; python manage.py runserver">Copiar</button>python -m venv .venv
+. .venv/bin/activate
+pip install -r requirements-dev.txt
+python manage.py migrate &amp;&amp; python manage.py runserver</pre>
+                </article>
+            </div>
+        </section>
+
+        <footer class="site-footer">
+            <div><strong>KronPlan</strong> · <em>Plan together. Build better.</em> · Open Source · By <strong>BLANDSKRON</strong></div>
+            <div class="footer-links">
+                <a href="https://github.com/Blandskron/KronPlan" target="_blank" rel="noopener">GitHub</a>
+                <a href="https://github.com/Blandskron/KronPlan/blob/main/docs/BRAND_GUIDELINES.md" target="_blank" rel="noopener">Brand Guidelines</a>
+                <a href="https://github.com/Blandskron/KronPlan/blob/main/docs/DESIGN_SYSTEM.md" target="_blank" rel="noopener">Design System</a>
+                <a href="https://github.com/Blandskron/KronPlan/blob/main/docs/ARCHITECTURE.md" target="_blank" rel="noopener">Arquitectura</a>
+                <a href="https://github.com/Blandskron/KronPlan/blob/main/LICENSE" target="_blank" rel="noopener">Licencia MIT</a>
+            </div>
+        </footer>
+    </main>
+
+    <dialog class="lightbox" id="lightbox" aria-labelledby="lightbox-title">
+        <div class="lightbox-head">
+            <strong id="lightbox-title">Vista previa</strong>
+            <button type="button" class="button button-secondary" id="lightbox-close" aria-label="Cerrar vista ampliada">
+                <svg class="kp-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-x"></use></svg>
+                Cerrar
+            </button>
+        </div>
+        <div class="lightbox-body">
+            <img id="lightbox-img" src="" alt="">
+        </div>
+    </dialog>
+
+    <script>
+        (function () {
+            const FLOW_STEPS = [
+                {
+                    num: '01',
+                    short: 'Portada pública',
+                    title: 'Portada pública para visitantes anónimos',
+                    url: 'kronplan.app/',
+                    src: './docs/screenshots/views/landing-desktop-dark.png',
+                    desc: 'Presenta KronPlan, las garantías del backend y accesos directos para crear cuenta de facilitador o iniciar sesión.'
+                },
+                {
+                    num: '02',
+                    short: 'Registro',
+                    title: 'Registro rápido del facilitador',
+                    url: 'kronplan.app/accounts/register/',
+                    src: './docs/screenshots/flow/02-register.png',
+                    desc: 'Solo quien organiza la sesión necesita cuenta; el panel lateral explica la promesa sin distraer del formulario.'
+                },
+                {
+                    num: '03',
+                    short: 'Nueva sala',
+                    title: 'Creación de sala con enlace único',
+                    url: 'kronplan.app/create/',
+                    src: './docs/screenshots/flow/03-create-room.png',
+                    desc: 'Define el nombre de la ceremonia y genera al instante una URL pública segura (/p/<public_id>/) lista para compartir.'
+                },
+                {
+                    num: '04',
+                    short: 'Invitado y mascota',
+                    title: 'Acceso sin registro y elección de mascota',
+                    url: 'kronplan.app/p/Bd7XKeeam/',
+                    src: './docs/screenshots/flow/04-guest-join.png',
+                    desc: 'Los participantes entran escribiendo su nombre y eligiendo mascota y color de asiento, o reciben una identidad determinista.'
+                },
+                {
+                    num: '05',
+                    short: 'Votación privada',
+                    title: 'Mesa en vivo con privacidad garantizada',
+                    url: 'kronplan.app/p/Bd7XKeeam/',
+                    src: './docs/screenshots/flow/05-live-voting.png',
+                    desc: 'Los votos se ocultan bajo el reverso con monograma K hasta el reveal autorizado; el paño muestra el conteo en tiempo real.'
+                },
+                {
+                    num: '06',
+                    short: 'Baraja y personaje',
+                    title: 'Baraja Fibonacci extendida y cambio de personaje',
+                    url: 'kronplan.app/p/Bd7XKeeam/',
+                    src: './docs/screenshots/flow/06-character-long-deck.png',
+                    desc: 'El facilitador alterna entre la baraja corta y extendida (hasta 89, ? y Coffee) mientras cualquiera personaliza su asiento.'
+                },
+                {
+                    num: '07',
+                    short: 'Modo recreo',
+                    title: 'Recreo interactivo mientras llega el último voto',
+                    url: 'kronplan.app/p/Bd7XKeeam/',
+                    src: './docs/screenshots/flow/07-recess-mode.png',
+                    desc: 'Capa efímera sobre el paño con puntos de encuentro sociales sin bloquear la baraja ni ocultar el estado de votación.'
+                },
+                {
+                    num: '08',
+                    short: 'Consenso unánime',
+                    title: 'Revelación sincronizada con consenso',
+                    url: 'kronplan.app/p/Bd7XKeeam/',
+                    src: './docs/screenshots/flow/08-reveal-consensus.png',
+                    desc: 'Cuenta atrás, volteo escalonado por asiento, pulso teal de consenso (#14B8A6) y guardado directo en la historia activa.'
+                },
+                {
+                    num: '09',
+                    short: 'Distribución dividida',
+                    title: 'Análisis cuando el equipo no coincide',
+                    url: 'kronplan.app/p/Bd7XKeeam/',
+                    src: './docs/screenshots/flow/09-reveal-split.png',
+                    desc: 'Calcula promedio, rango y barras por carta resaltando los extremos para enfocar la conversación antes de revotar.'
+                },
+                {
+                    num: '10',
+                    short: 'Dashboard Bento',
+                    title: 'Panel Bento Grid de salas activas y cerradas',
+                    url: 'kronplan.app/accounts/dashboard/',
+                    src: './docs/screenshots/views/dashboard-desktop-dark.png',
+                    desc: 'Métricas de sesiones totales, activas y cerradas junto al acceso directo para retomar cualquier mesa.'
+                }
+            ];
+
+            const MATRIX_SCREENS = [
+                { id: 'room-voting', label: 'Mesa votando', desc: 'Anillo elíptico calculado por longitud de arco, cartas reverso K y mano inferior accesible.' },
+                { id: 'room-revealed', label: 'Mesa revelada', desc: 'Votos visibles tras el reveal autorizado con cálculo de promedio, rango y distribución.' },
+                { id: 'landing', label: 'Portada', desc: 'Hero editorial, tarjeta de previsualización, Bento Grid de capacidades y flujo en tres pasos.' },
+                { id: 'login', label: 'Ingreso', desc: 'Autenticación de facilitadores respetando la invariante de panel de marca oscuro en ambos temas.' },
+                { id: 'dashboard', label: 'Dashboard', desc: 'Panel de control con tarjetas Bento para retomar sesiones activas o revisar históricas.' },
+                { id: 'join-guest', label: 'Invitado', desc: 'Pantalla de entrada en un paso con selector de mascotas SVG, colores y vista previa inmediata.' }
+            ];
+
+            let heroState = 'voting';
+            let flowIndex = 0;
+            let matrixScreen = 'room-voting';
+            let matrixTheme = document.documentElement.dataset.theme || 'dark';
+            let matrixDevice = 'desktop';
+
+            const themeToggle = document.getElementById('theme-toggle');
+            const themeIcon = document.getElementById('theme-icon');
+            const themeLabel = document.getElementById('theme-label');
+            const themeMeta = document.getElementById('theme-color-meta');
+            const mediaQuery = window.matchMedia ? window.matchMedia('(prefers-color-scheme: light)') : null;
+
+            function resolveTheme(mode) {
+                if (mode === 'system') return mediaQuery && mediaQuery.matches ? 'light' : 'dark';
+                return mode === 'light' ? 'light' : 'dark';
+            }
+
+            function syncThemeUI() {
+                const mode = document.documentElement.dataset.themeMode || 'dark';
+                const resolved = resolveTheme(mode);
+                document.documentElement.dataset.theme = resolved;
+                if (themeMeta) themeMeta.content = resolved === 'light' ? '#F5F7FB' : '#0D1020';
+                const cfg = {
+                    dark: ['#icon-moon', 'Oscuro'],
+                    light: ['#icon-sun', 'Claro'],
+                    system: ['#icon-monitor', 'Sistema']
+                }[mode] || ['#icon-moon', 'Oscuro'];
+                themeIcon.setAttribute('href', cfg[0]);
+                themeLabel.textContent = cfg[1];
+                themeToggle.title = 'Tema actual: ' + cfg[1] + ' (clic para cambiar)';
+                syncHero();
+            }
+
+            function setThemeMode(mode) {
+                document.documentElement.dataset.themeMode = mode;
+                try { localStorage.setItem('kronplan-theme', mode); } catch (_) {}
+                syncThemeUI();
+            }
+
+            themeToggle.addEventListener('click', () => {
+                const order = ['dark', 'light', 'system'];
+                const cur = document.documentElement.dataset.themeMode || 'dark';
+                setThemeMode(order[(order.indexOf(cur) + 1) % order.length]);
+            });
+            if (mediaQuery) {
+                mediaQuery.addEventListener('change', () => {
+                    if (document.documentElement.dataset.themeMode === 'system') syncThemeUI();
+                });
+            }
+
+            // Hero preview synchronized with current page theme
+            const heroImg = document.getElementById('hero-img');
+            const heroUrl = document.getElementById('hero-url');
+            function syncHero() {
+                const t = document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
+                const prefix = heroState === 'revealed' ? 'room-revealed' : 'room-voting';
+                heroImg.src = './docs/screenshots/views/' + prefix + '-desktop-' + t + '.png';
+                heroImg.alt = heroState === 'revealed'
+                    ? 'Mesa de KronPlan con votos revelados en tema ' + t
+                    : 'Mesa de KronPlan con votación activa en tema ' + t;
+                heroUrl.textContent = 'kronplan.app/p/8gGv0aTF14/ · tema ' + (t === 'light' ? 'claro' : 'oscuro');
+                document.querySelectorAll('[data-hero-state]').forEach(btn => {
+                    btn.setAttribute('aria-pressed', String(btn.dataset.heroState === heroState));
+                });
+            }
+            document.querySelectorAll('[data-hero-state]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    heroState = btn.dataset.heroState;
+                    syncHero();
+                });
+            });
+
+            // Interactive 10-step flow
+            const flowTablist = document.getElementById('flow-tablist');
+            const flowImg = document.getElementById('flow-img');
+            const flowUrl = document.getElementById('flow-url');
+            const flowBadge = document.getElementById('flow-badge');
+            const flowTitle = document.getElementById('flow-step-title');
+            const flowDesc = document.getElementById('flow-step-desc');
+
+            FLOW_STEPS.forEach((step, idx) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'flow-step-btn';
+                btn.setAttribute('role', 'tab');
+                btn.dataset.stepIndex = String(idx);
+                btn.innerHTML = '<span class="step-num">' + step.num + '</span><span><strong>' + step.short + '</strong><small>' + step.title + '</small></span>';
+                btn.addEventListener('click', () => renderFlow(idx));
+                flowTablist.appendChild(btn);
+            });
+
+            function renderFlow(idx) {
+                flowIndex = (idx + FLOW_STEPS.length) % FLOW_STEPS.length;
+                const s = FLOW_STEPS[flowIndex];
+                flowImg.src = s.src;
+                flowImg.alt = 'Paso ' + s.num + ': ' + s.title;
+                flowUrl.textContent = s.url;
+                flowBadge.textContent = 'Paso ' + s.num + ' / ' + FLOW_STEPS.length;
+                flowTitle.textContent = s.title;
+                flowDesc.textContent = s.desc;
+                flowTablist.querySelectorAll('.flow-step-btn').forEach((btn, i) => {
+                    btn.setAttribute('aria-selected', String(i === flowIndex));
+                });
+            }
+            document.getElementById('flow-prev').addEventListener('click', () => renderFlow(flowIndex - 1));
+            document.getElementById('flow-next').addEventListener('click', () => renderFlow(flowIndex + 1));
+
+            // Multi-mode Matrix Gallery
+            const matrixTabs = document.getElementById('matrix-screens');
+            const matrixFrame = document.getElementById('matrix-frame');
+            const matrixImg = document.getElementById('matrix-img');
+            const matrixUrl = document.getElementById('matrix-url');
+            const matrixDesc = document.getElementById('matrix-desc');
+            const matrixFile = document.getElementById('matrix-file');
+
+            MATRIX_SCREENS.forEach(item => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'screen-tab';
+                btn.setAttribute('role', 'tab');
+                btn.dataset.screenId = item.id;
+                btn.textContent = item.label;
+                btn.addEventListener('click', () => {
+                    matrixScreen = item.id;
+                    renderMatrix();
+                });
+                matrixTabs.appendChild(btn);
+            });
+
+            document.querySelectorAll('[data-matrix-theme]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    matrixTheme = btn.dataset.matrixTheme;
+                    renderMatrix();
+                });
+            });
+            document.querySelectorAll('[data-matrix-device]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    matrixDevice = btn.dataset.matrixDevice;
+                    renderMatrix();
+                });
+            });
+
+            function renderMatrix() {
+                const item = MATRIX_SCREENS.find(s => s.id === matrixScreen) || MATRIX_SCREENS[0];
+                const relPath = 'docs/screenshots/views/' + item.id + '-' + matrixDevice + '-' + matrixTheme + '.png';
+                matrixImg.src = './' + relPath;
+                matrixImg.alt = item.label + ' en ' + (matrixDevice === 'mobile' ? 'Móvil' : 'Desktop') + ' ' + (matrixTheme === 'light' ? 'Claro' : 'Oscuro');
+                matrixFrame.classList.toggle('is-mobile', matrixDevice === 'mobile');
+                matrixUrl.textContent = (matrixDevice === 'mobile' ? '390×844 Móvil' : '1440×900 Desktop') + ' · Tema ' + (matrixTheme === 'light' ? 'Claro' : 'Oscuro');
+                matrixDesc.textContent = item.desc;
+                matrixFile.textContent = relPath;
+
+                matrixTabs.querySelectorAll('.screen-tab').forEach(btn => {
+                    btn.setAttribute('aria-selected', String(btn.dataset.screenId === matrixScreen));
+                });
+                document.querySelectorAll('[data-matrix-theme]').forEach(btn => {
+                    btn.setAttribute('aria-pressed', String(btn.dataset.matrixTheme === matrixTheme));
+                });
+                document.querySelectorAll('[data-matrix-device]').forEach(btn => {
+                    btn.setAttribute('aria-pressed', String(btn.dataset.matrixDevice === matrixDevice));
+                });
+            }
+
+            // Lightbox
+            const lightbox = document.getElementById('lightbox');
+            const lightboxImg = document.getElementById('lightbox-img');
+            const lightboxTitle = document.getElementById('lightbox-title');
+            function openLightbox(src, alt) {
+                lightboxImg.src = src;
+                lightboxImg.alt = alt;
+                lightboxTitle.textContent = alt;
+                lightbox.showModal();
+            }
+            document.getElementById('hero-zoom').addEventListener('click', () => openLightbox(heroImg.src, heroImg.alt));
+            document.getElementById('flow-zoom').addEventListener('click', () => openLightbox(flowImg.src, flowImg.alt));
+            document.getElementById('matrix-zoom').addEventListener('click', () => openLightbox(matrixImg.src, matrixImg.alt));
+            document.getElementById('lightbox-close').addEventListener('click', () => lightbox.close());
+            lightbox.addEventListener('click', event => {
+                if (event.target === lightbox) lightbox.close();
+            });
+
+            // Copy buttons
+            document.querySelectorAll('.copy-btn').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const orig = btn.textContent;
+                    try {
+                        await navigator.clipboard.writeText(btn.dataset.copy);
+                        btn.textContent = 'Copiado';
+                        setTimeout(() => { btn.textContent = orig; }, 1600);
+                    } catch (_) {
+                        btn.textContent = 'Error';
+                    }
+                });
+            });
+
+            syncThemeUI();
+            renderFlow(0);
+            renderMatrix();
+        })();
+    </script>
+</body>
+</html>

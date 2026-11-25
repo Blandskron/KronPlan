@@ -1,10 +1,10 @@
-# Planning Pocket - Developer Guide
+# KronPlan — Developer Guide
 
-Welcome to the internal developer documentation for Planning Pocket. This guide explains the core architectural decisions, data flow, and conventions used throughout the repository.
+Welcome to the internal developer documentation for **KronPlan** (Open Source · By BLANDSKRON). This guide explains the core architectural decisions, data flow, and conventions used throughout the repository.
 
 ## 1. Architectural Philosophy
 
-Planning Pocket is built strictly on the **"Server as the Source of Truth"** principle.
+KronPlan is built strictly on the **"Server as the Source of Truth"** principle.
 Unlike modern SPAs (Single Page Applications) that rely heavily on client-side state management (e.g., Redux, Vuex), this application maintains a completely stateless client.
 All critical logic, privacy checks, and state transitions are handled exclusively by the Django backend.
 
@@ -64,7 +64,7 @@ The repository follows a test-first approach for critical rules:
 
 ### Ejecutar la validación local
 
-Usa Python 3.11 o superior y crea un entorno virtual con `python -m venv .venv`.
+Usa Python 3.12 o superior y crea un entorno virtual con `python -m venv .venv`.
 Después de instalar `requirements-dev.txt`, ejecuta:
 
 ```powershell
@@ -79,7 +79,7 @@ producción real: sus hallazgos se corrigen en el trabajo de endurecimiento de d
 
 ## 5. UI/UX Guidelines
 
-- **CSS Variables**: Global themes are managed in `static/css/style.css` using `:root` variables (e.g., `--primary`, `--bg-color`).
+- **CSS Variables**: Global themes are managed in `static/css/style.css` using `:root` variables (primitivas `--kp-*` traducidas a tokens semánticos como `--bg`, `--surface` y `--accent`; ver `docs/DESIGN_SYSTEM.md`).
 - **Responsive Layout**: Utilizing CSS Grid and Flexbox. The application gracefully degrades on mobile.
 - **Heuristics Applied**: 
   - *Feedback*: Modals/Toasts (`showToast`) appear on WS events. Buttons disable themselves on submit.

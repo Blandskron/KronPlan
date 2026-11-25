@@ -80,7 +80,7 @@ además como texto.
 
 ## Cartas de participante
 
-- El reverso rosa de marca indica que la persona ya votó, sin revelar su valor. Al aparecer, la
+- El reverso violeta/índigo con monograma K de KronPlan indica que la persona ya votó, sin revelar su valor. Al aparecer, la
   carta se apoya sobre la mesa con una animación breve.
 - Una carta clara con la etiqueta `Pensando` indica que está conectada y aún no vota; los puntos
   suspensivos laten con suavidad.
@@ -123,7 +123,7 @@ gesto comunica «puse mi carta sobre la mesa»; el voto real lo decide el servid
 1. Cuenta atrás de tres tiempos sobre el paño, para que el último voto todavía quepa.
 2. Las cartas giran una tras otra alrededor del anillo, con 70 ms de retardo por asiento.
 3. Aterriza el panel de resultado.
-4. Si hay unanimidad, el paño recibe un pulso dorado de 1,9 s.
+4. Si hay unanimidad, el paño recibe un pulso teal de consenso (`#14B8A6`) de 1,9 s.
 
 Con `prefers-reduced-motion` la cuenta atrás y el escalonado se omiten: el resultado aparece de
 inmediato.
@@ -228,14 +228,8 @@ caminante. `will-change` se usa en un solo sitio, justamente ahí.
 Por debajo de 700px la sala deja de ser una página y pasa a ser una pantalla de aplicación. Son
 tres decisiones, y ninguna es decorativa:
 
-- **La mano va anclada al borde inferior.** Elegir carta es la acción de esta pantalla, así que
-  vive bajo el pulgar: hoja con esquinas redondeadas arriba, fondo translúcido y un tirador que
-  dice que es una capa sobre la mesa. La barra de pestañas de la app se retira en la sala, porque
-  ese borde ya tiene dueño.
-- **El hueco se mide, no se adivina.** La altura de la hoja cambia con la bandeja de objetos, así
-  que el cliente la mide con un `ResizeObserver` y la publica en `--deck-dock-height`; la sala
-  reserva exactamente eso de relleno inferior. Con un valor fijo, la última fila de la mesa queda
-  tapada para siempre y no hay scroll que la saque.
+- **La mano va apilada sobre la barra de pestañas.** Elegir carta es la acción de esta pantalla, así que vive bajo el pulgar: hoja con esquinas redondeadas arriba, fondo translúcido y un tirador que dice que es una capa sobre la mesa, apoyada directamente sobre `.app-tabbar` para conservar tanto el voto en un toque como la navegación de la app.
+- **El hueco se mide, no se adivina.** La altura de la hoja cambia con la bandeja de objetos, así que el cliente la mide con un `ResizeObserver` y la publica en `--deck-dock-height`; la sala reserva `--deck-dock-height + --tabbar-height` de relleno inferior. Con un valor fijo, la última fila de la mesa queda tapada para siempre y no hay scroll que la saque.
 - **La cabecera se encoge hasta lo que dice algo.** Desaparece el rótulo «Mesa de planning» —la
   app entera es una mesa de planning— y los interruptores conservan su etiqueta: un interruptor
   sin texto es un punto de color que no dice qué apaga.
@@ -243,9 +237,3 @@ tres decisiones, y ninguna es decorativa:
 `100dvh` en lugar de `100vh` y `env(safe-area-inset-*)` en todo lo anclado, para que nada quede
 bajo el notch ni bajo la barra de gestos. El test `test_a_phone_never_scrolls_sideways` sigue
 mandando: nada anclado introduce desplazamiento horizontal.
-
-## Prototipo
-
-No hay ninguno. Había una exploración estática en `prototype/index.html` que dejó de reflejar la
-mesa, y un prototipo obsoleto engaña más de lo que ayuda. La sala real es ahora la referencia, y su
-geometría y sus estados se verifican midiendo el DOM. El archivo sigue en el historial de git.

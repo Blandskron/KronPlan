@@ -1,6 +1,6 @@
 # Registro de Decisiones Arquitectónicas (ADR)
 
-Este documento registra decisiones técnicas y de diseño importantes que impactan a Planning Pocket.
+Este documento registra decisiones técnicas y de diseño importantes que impactan a KronPlan.
 
 ---
 
@@ -298,4 +298,4 @@ que el ADR anterior evitó para no tocar una geometría verificada al píxel.
 **Consecuencias:**
 - Unifica la marca visual entre `blandskron.cl` y KronPlan sin romper compatibilidad con instalaciones, enlaces ni sesiones existentes.
 - Excluye `.agents/` de Ruff y Pytest en `pyproject.toml` para no contaminar la validación del proyecto Django.
-- Establece en `ROADMAP.md` las cuatro fases verificables con gates de `pytest`, Playwright E2E, `axe-core` (WCAG 2.2 AA) y Lighthouse.
+- Valida la transición completa con gates de `pytest`, Playwright E2E, `axe-core` (WCAG 2.2 AA) y Lighthouse.

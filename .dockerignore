@@ -36,8 +36,10 @@ staticfiles/
 test-results/
 *.log
 
-# Sólo sirven en la máquina de quien desarrolla
+# Sólo sirven en la máquina de quien desarrolla y GitHub Pages
 docs/
+index.html
+.nojekyll
 AGENTS.md
 PLAN.md
 CHANGELOG.md

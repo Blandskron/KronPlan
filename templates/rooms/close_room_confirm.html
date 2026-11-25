@@ -1,6 +1,16 @@
 {% extends 'base.html' %}
-{% block title %}Cerrar {{ room.name }} · Planning Pocket{% endblock %}
+{% block title %}Cerrar {{ room.name }} · KronPlan{% endblock %}
 {% block shell_class %}narrow-shell{% endblock %}
 {% block content %}
-<section class="decision-card"><span class="decision-icon" aria-hidden="true">×</span><span class="eyebrow">Acción irreversible</span><h1>¿Cerrar “{{ room.name }}”?</h1><p>Los participantes dejarán de poder entrar y esta sala quedará marcada como cerrada.</p><form method="post" class="decision-actions">{% csrf_token %}<a href="{% url 'room_detail' room.public_id %}" class="button button-secondary">Cancelar</a><button type="submit" class="button button-danger">Sí, cerrar sala</button></form></section>
+<section class="decision-card">
+    <span class="decision-icon" aria-hidden="true"><svg class="kp-icon" viewBox="0 0 24 24"><use href="#icon-x"></use></svg></span>
+    <span class="eyebrow">Acción irreversible</span>
+    <h1>¿Cerrar “{{ room.name }}”?</h1>
+    <p>Los participantes dejarán de poder entrar y esta sala quedará marcada como cerrada.</p>
+    <form method="post" class="decision-actions">
+        {% csrf_token %}
+        <a href="{% url 'room_detail' room.public_id %}" class="button button-secondary">Cancelar</a>
+        <button type="submit" class="button button-danger">Sí, cerrar sala</button>
+    </form>
+</section>
 {% endblock %}

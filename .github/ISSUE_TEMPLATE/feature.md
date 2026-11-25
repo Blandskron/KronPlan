@@ -12,5 +12,5 @@ labels: enhancement
 
 ## Qué NO debería cambiar
 
-<!-- Planning Pocket tiene reglas que no se negocian: el voto es privado hasta el reveal,
+<!-- KronPlan tiene reglas que no se negocian: el voto es privado hasta el reveal,
      el servidor es la autoridad, y no entran frameworks SPA. Ver AGENTS.md y docs/DECISIONS.md. -->

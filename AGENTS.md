@@ -1,6 +1,6 @@
 # Contrato para Agentes de IA
 
-Bienvenido a **Planning Pocket**. Este repositorio sigue una filosofía *Agents-first* y *Human-friendly*. Como agente de IA, debes seguir estrictamente estas reglas.
+Bienvenido a **KronPlan**. Este repositorio sigue una filosofía *Agents-first* y *Human-friendly*. Como agente de IA, debes seguir estrictamente estas reglas.
 
 ## 1. Reglas de Arranque
 
@@ -48,7 +48,7 @@ Antes de decir que una tarea está terminada:
 
 ```bash
 python -m ruff check .
-python -m pytest .              # 96 tests, unos 5 segundos
+python -m pytest .
 python manage.py check
 python manage.py makemigrations --check --dry-run
 ```

@@ -94,7 +94,7 @@ class RoomsTests(TestCase):
 
         self.assertContains(response, 'class="room-sidebar"')
         self.assertContains(response, 'Añadir historia')
-        self.assertContains(response, 'aria-label="Activar modo oscuro"')
+        self.assertContains(response, 'aria-label="Tema: oscuro (cambiar a claro)"')
 
     def test_cannot_join_closed_room(self):
         self.room.close_room()

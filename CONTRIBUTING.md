@@ -1,4 +1,4 @@
-# Cómo contribuir a Planning Pocket
+# Cómo contribuir a KronPlan
 
 ## El flujo: GitHub Flow
 
@@ -48,8 +48,7 @@ DJANGO_ALLOW_ASYNC_UNSAFE=true python -m pytest -m e2e
 En PowerShell la última línea es
 `$env:DJANGO_ALLOW_ASYNC_UNSAFE = "true"; python -m pytest -m e2e`.
 
-Cobertura: el umbral de CI es 80 % general y la suite está en 80,48 %. El margen es estrecho
-a propósito. Si tu cambio la baja, añade los tests en el mismo pull request.
+Cobertura: el umbral de CI es 80 % general (90 %+ esperado en dominio/servicios). Si tu cambio la baja, añade los tests en el mismo pull request.
 
 ```bash
 python -m pytest . --cov --cov-report=term-missing
@@ -86,7 +85,7 @@ Sólo con permisos de escritura en el repositorio.
 4. Tag anotado y push:
 
    ```bash
-   git tag -a v1.2.0 -m "Planning Pocket v1.2.0"
+   git tag -a v1.2.0 -m "KronPlan v1.2.0"
    git push origin v1.2.0
    ```
 

@@ -1,6 +1,12 @@
 {% extends 'base.html' %}
-{% block title %}Sala cerrada · Planning Pocket{% endblock %}
+{% block title %}Sala cerrada · KronPlan{% endblock %}
 {% block shell_class %}narrow-shell{% endblock %}
 {% block content %}
-<section class="decision-card"><span class="decision-icon is-neutral" aria-hidden="true">✓</span><span class="eyebrow">Sesión finalizada</span><h1>Esta mesa ya cerró</h1><p>La sala <strong>{{ room.name }}</strong> fue cerrada por su facilitador.</p><a href="{% url 'dashboard' %}" class="button button-primary">Ir al inicio</a></section>
+<section class="decision-card">
+    <span class="decision-icon is-neutral" aria-hidden="true"><svg class="kp-icon" viewBox="0 0 24 24"><use href="#icon-check"></use></svg></span>
+    <span class="eyebrow">Sesión finalizada</span>
+    <h1>Esta mesa ya cerró</h1>
+    <p>La sala <strong>{{ room.name }}</strong> fue cerrada por su facilitador.</p>
+    <a href="{% url 'home' %}" class="button button-primary">Ir al inicio</a>
+</section>
 {% endblock %}

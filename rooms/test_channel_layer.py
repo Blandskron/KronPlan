@@ -11,7 +11,9 @@ Este test no necesita un Redis levantado: comprueba la invariante estructural qu
 mantiene sana esa conversación, que es lo que se rompió.
 """
 
+import asyncio
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -73,3 +75,20 @@ def test_without_a_redis_url_the_layer_stays_in_memory():
     """Es lo que usa la suite y el desarrollo local; no debe arrastrar Redis."""
     layer = channel_layers_with("")["default"]
     assert layer["BACKEND"] == "channels.layers.InMemoryChannelLayer"
+
+
+@pytest.mark.asyncio
+async def test_live_redis_channel_layer_survives_past_blocking_pop_timeout():
+    """Contra un Redis real, esperar más de 6 s no debe lanzar redis TimeoutError."""
+    redis_url = os.environ.get("REDIS_LIVE_URL")
+    if not redis_url:
+        pytest.skip("REDIS_LIVE_URL no definido; se omite prueba contra Redis real.")
+
+    layer = RedisChannelLayer(
+        hosts=[{"address": redis_url, "socket_timeout": 20, "socket_connect_timeout": 5}]
+    )
+    try:
+        with pytest.raises(asyncio.TimeoutError):
+            await asyncio.wait_for(layer.receive("kronplan.test.idle.channel"), timeout=6.5)
+    finally:
+        await layer.close_pools()

@@ -1,4 +1,4 @@
-# Arquitectura de Planning Pocket
+# Arquitectura de KronPlan
 
 ## 1. Visión General
 El sistema sigue una arquitectura monolítica modular basada en Django, donde el servidor es la fuente de verdad (Server-Side Authority). Se utiliza Django Channels y Redis para mantener sincronizados a los participantes de la sala en tiempo real.

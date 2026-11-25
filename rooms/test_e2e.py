@@ -633,10 +633,11 @@ def test_a_phone_navigates_from_the_tab_bar_not_the_header(live_server, page, ta
 
 
 def test_the_hand_is_docked_to_the_bottom_edge_of_a_phone(live_server, page, table):
-    """La baraja es la acción de esta pantalla, así que vive bajo el pulgar.
+    """La baraja y la barra de pestañas se apilan abajo sin pisarse ni tapar la mesa.
 
-    Anclarla sólo sirve si la página reserva su altura: si no, la última fila de
-    la mesa queda permanentemente debajo de la hoja y no hay scroll que la saque.
+    En móvil, la barra de pestañas vive en el borde inferior y la mano de cartas
+    se apoya justo encima de ella. El hueco reservado en `.room-shell` debe
+    cubrir la suma real de ambas alturas.
     """
     table["seat"](7, votes=["8", "5", None, "8", None, "13", "8"])
     enter_room(live_server, page, table, width=390, height=844)
@@ -644,29 +645,36 @@ def test_the_hand_is_docked_to_the_bottom_edge_of_a_phone(live_server, page, tab
     hand = page.evaluate("""() => {
         const deck = document.getElementById('room-deck-wrap');
         const box = deck.getBoundingClientRect();
+        const bar = document.querySelector('.app-tabbar');
+        const barBox = bar.getBoundingClientRect();
         const shell = document.querySelector('.room-shell');
         return {
             docked: getComputedStyle(deck).position === 'fixed',
-            atTheBottom: Math.abs(box.bottom - window.innerHeight) <= 1,
+            tabbarVisible: bar.checkVisibility(),
+            tabbarAtBottom: Math.abs(barBox.bottom - window.innerHeight) <= 1,
+            stackedAboveTabbar: Math.abs(box.bottom - barBox.top) <= 2,
             fullWidth: box.left <= 1 && Math.abs(box.right - window.innerWidth) <= 1,
             /* La altura real de la hoja llega al CSS medida, no adivinada. */
             heightReported: parseFloat(getComputedStyle(document.documentElement)
                 .getPropertyValue('--deck-dock-height')),
             heightMeasured: box.height,
-            spaceReserved: parseFloat(getComputedStyle(shell).paddingBottom) >= box.height - 1,
-            tabbarOutOfTheWay: !document.querySelector('.app-tabbar').checkVisibility(),
+            spaceReserved: parseFloat(getComputedStyle(shell).paddingBottom)
+                >= (box.height + barBox.height - 2),
             everyCardReachable: [...document.querySelectorAll('.poker-card')]
-                .every(c => c.getBoundingClientRect().bottom <= window.innerHeight + 1)
+                .every(c => c.getBoundingClientRect().bottom <= barBox.top + 1)
         };
     }""")
 
-    assert hand["docked"] and hand["atTheBottom"] and hand["fullWidth"]
+    assert hand["docked"] and hand["fullWidth"]
+    assert hand["tabbarVisible"] and hand["tabbarAtBottom"], (
+        "la barra de pestañas no está anclada abajo en la sala"
+    )
+    assert hand["stackedAboveTabbar"], "la baraja y la barra inferior se solapan o están separadas"
     assert abs(hand["heightReported"] - hand["heightMeasured"]) <= 1, (
         "el hueco reservado se calculó a ojo en vez de medir la hoja"
     )
-    assert hand["spaceReserved"], "la hoja tapa el final de la mesa y no hay scroll que lo salve"
-    assert hand["tabbarOutOfTheWay"], "dos barras compitiendo por el borde inferior"
-    assert hand["everyCardReachable"]
+    assert hand["spaceReserved"], "la hoja y la barra tapan el final de la mesa"
+    assert hand["everyCardReachable"], "una carta quedó tapada por la barra de pestañas"
 
 
 def test_the_desktop_keeps_the_hand_in_flow_and_the_tab_bar_away(live_server, page, table):
@@ -784,3 +792,83 @@ def test_the_hand_is_redealt_whole_when_the_deck_changes(live_server, page, tabl
     assert after["distinctTransforms"] > 1 and after["overlapping"], "la mano dejó de ser abanico"
     assert after["coffeeIsNarrowed"], "el café volvió a desbordar su carta"
     assert after["labelled"] and after["pressable"]
+
+
+def test_landing_page_and_three_state_theme_cycle(live_server, page):
+    """La portada pública carga en dark por defecto y cicla dark → light → system."""
+    page.set_viewport_size({"width": 1440, "height": 900})
+    page.goto(f"{live_server.url}/")
+    page.wait_for_selector(".landing-hero")
+
+    initial = page.evaluate("""() => ({
+        title: document.title,
+        mode: document.documentElement.dataset.themeMode,
+        theme: document.documentElement.dataset.theme,
+        overflowX: document.documentElement.scrollWidth > window.innerWidth + 1
+    })""")
+    assert "KronPlan" in initial["title"]
+    assert initial["mode"] == "dark" and initial["theme"] == "dark"
+    assert not initial["overflowX"]
+
+    page.click("#theme-toggle")
+    assert page.evaluate("() => document.documentElement.dataset.themeMode") == "light"
+    assert page.evaluate("() => document.documentElement.dataset.theme") == "light"
+
+    page.click("#theme-toggle")
+    assert page.evaluate("() => document.documentElement.dataset.themeMode") == "system"
+
+    page.click("#theme-toggle")
+    assert page.evaluate("() => document.documentElement.dataset.themeMode") == "dark"
+    assert page.evaluate("() => localStorage.getItem('kronplan-theme')") == "dark"
+
+    # Compatibilidad con la clave anterior planning-pocket-theme
+    page.evaluate("""() => {
+        localStorage.removeItem('kronplan-theme');
+        localStorage.setItem('planning-pocket-theme', 'light');
+    }""")
+    page.reload()
+    assert page.evaluate("() => document.documentElement.dataset.theme") == "light"
+
+
+def test_login_cards_never_overlap_brand_copy(live_server, page):
+    """Regresión visual de Fase 1: `.auth-deck` nunca pisa el texto en 1440×900."""
+    page.set_viewport_size({"width": 1440, "height": 900})
+    page.goto(f"{live_server.url}/accounts/login/")
+    page.wait_for_selector(".auth-deck")
+
+    boxes = page.evaluate("""() => {
+        const copy = document.querySelector('.auth-promise-copy').getBoundingClientRect();
+        const deck = document.querySelector('.auth-deck').getBoundingClientRect();
+        return { copyBottom: copy.bottom, deckTop: deck.top };
+    }""")
+    assert boxes["deckTop"] >= boxes["copyBottom"] - 1
+
+
+def test_keyboard_shortcuts_vote_and_navigate_deck(live_server, page, table):
+    """Los atajos `0-9` y `?` votan fuera de inputs y las flechas recorren la baraja."""
+    enter_room(live_server, page, table)
+
+    page.keyboard.press("5")
+    assert page.get_attribute('.poker-card[data-card="5"]', "aria-pressed") == "true"
+
+    page.eval_on_selector('.poker-card[data-card="5"]', "el => el.focus()")
+    page.keyboard.press("ArrowRight")
+    focused = page.evaluate("() => document.activeElement.dataset.card")
+    assert focused == "8"
+
+    # Dentro de un input no dispara atajos de carta
+    page.focus("#id_title")
+    page.keyboard.press("3")
+    assert page.get_attribute('.poker-card[data-card="5"]', "aria-pressed") == "true"
+    assert page.get_attribute('.poker-card[data-card="3"]', "aria-pressed") == "false"
+
+
+def test_websocket_status_handles_reconnect_and_removal(live_server, page, table):
+    """El indicador de conexión refleja reconexión (1006) y expulsión (4403)."""
+    enter_room(live_server, page, table)
+
+    page.evaluate("() => { ws.onclose({code: 1006}); }")
+    assert page.text_content("#ws-status .connection-label") == "Reconectando"
+
+    page.evaluate("() => { ws.onclose({code: 4403}); }")
+    assert page.text_content("#ws-status .connection-label") == "Fuera de la sala"

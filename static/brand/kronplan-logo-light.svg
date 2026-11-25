@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 288 56" width="288" height="56" fill="none" role="img" aria-label="KronPlan — Agile Planning and Estimation">
+  <defs>
+    <linearGradient id="kp-ll-bg" x1="10" y1="6" x2="48" y2="50" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#7C3AED"/>
+      <stop offset="60%" stop-color="#6366F1"/>
+      <stop offset="100%" stop-color="#4F46E5"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(4 0) scale(0.875)">
+    <g transform="rotate(-11 28 34)">
+      <rect x="10" y="10" width="34" height="44" rx="8" fill="#EDE9FE" stroke="#6D28D9" stroke-width="2" stroke-opacity="0.72"/>
+      <rect x="14.5" y="14.5" width="25" height="35" rx="4.5" stroke="#6D28D9" stroke-width="1" stroke-opacity="0.22"/>
+    </g>
+    <g transform="rotate(4 36 32)">
+      <rect x="18" y="8" width="36" height="48" rx="9" fill="url(#kp-ll-bg)" stroke="#DDD6FE" stroke-width="1.5" stroke-opacity="0.65"/>
+      <rect x="22" y="12" width="28" height="40" rx="5.5" stroke="#F5F7FB" stroke-width="1" stroke-opacity="0.28"/>
+      <path d="M27.5 21.5V42.5" stroke="#F5F7FB" stroke-width="4" stroke-linecap="round"/>
+      <path d="M41.5 21.5L31.2 31.8L42 42.5" stroke="#F5F7FB" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M45.5 14.5L47.5 16.5L45.5 18.5L43.5 16.5Z" fill="#22D3EE"/>
+    </g>
+  </g>
+  <text x="68" y="29" fill="#121024" font-family="Sora, Inter, ui-sans-serif, system-ui, sans-serif" font-size="22" font-weight="800" letter-spacing="-0.6">Kron<tspan fill="#6D28D9">Plan</tspan></text>
+  <text x="69" y="44" fill="#544E70" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="9.5" font-weight="600" letter-spacing="1.7">AGILE PLANNING &amp; ESTIMATION</text>
+</svg>

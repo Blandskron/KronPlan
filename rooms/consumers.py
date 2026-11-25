@@ -88,14 +88,7 @@ class PokerConsumer(AsyncWebsocketConsumer):
                 self.room_group_name,
                 {
                     "type": "participant.joined",
-                    "participant": {
-                        "id": self.participant.id,
-                        "display_name": self.participant.display_name,
-                        "has_voted": self.participant.current_vote is not None,
-                        "is_online": True,
-                        "current_vote": None,
-                        **self.participant.identity,
-                    },
+                    "participant": await self.get_participant_state(),
                 },
             )
 
@@ -602,6 +595,12 @@ class PokerConsumer(AsyncWebsocketConsumer):
         room = PokerRoom.objects.get(public_id=self.public_id)
         room = set_recess(room.id, enabled, self.live_actor())
         return room.recess_open
+
+    @database_sync_to_async
+    def get_participant_state(self):
+        room = PokerRoom.objects.get(public_id=self.public_id)
+        participant = Participant.objects.get(pk=self.participant.id)
+        return self._participant_state(participant, room)
 
     @database_sync_to_async
     def get_all_participants_state(self):

@@ -91,8 +91,8 @@ jobs:
       - name: check --deploy con DEBUG=False
         env:
           DJANGO_DEBUG: "False"
-          DJANGO_ALLOWED_HOSTS: "planning-pocket.example.com"
-          DJANGO_CSRF_TRUSTED_ORIGINS: "https://planning-pocket.example.com"
+          DJANGO_ALLOWED_HOSTS: "kronplan.example.com"
+          DJANGO_CSRF_TRUSTED_ORIGINS: "https://kronplan.example.com"
           DJANGO_SECURE_SSL_REDIRECT: "True"
         run: |
           export DJANGO_SECRET_KEY="$(python -c 'from django.core.management.utils import get_random_secret_key as g; print(g())')"
@@ -101,7 +101,7 @@ jobs:
       - name: collectstatic con el storage de producción
         env:
           DJANGO_DEBUG: "False"
-          DJANGO_ALLOWED_HOSTS: "planning-pocket.example.com"
+          DJANGO_ALLOWED_HOSTS: "kronplan.example.com"
         run: |
           export DJANGO_SECRET_KEY="$(python -c 'from django.core.management.utils import get_random_secret_key as g; print(g())')"
           python manage.py collectstatic --noinput
@@ -145,7 +145,7 @@ jobs:
           context: .
           push: false
           load: true
-          tags: planning-pocket:ci
+          tags: kronplan:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
       # Construir no basta: la imagen tiene que arrancar con la configuración real.
@@ -154,9 +154,9 @@ jobs:
           docker run --rm \
             -e DJANGO_DEBUG=False \
             -e DJANGO_SECRET_KEY="$(head -c 64 /dev/urandom | base64 | tr -d '\n')" \
-            -e DJANGO_ALLOWED_HOSTS=planning-pocket.example.com \
+            -e DJANGO_ALLOWED_HOSTS=kronplan.example.com \
             --entrypoint python \
-            planning-pocket:ci manage.py check --deploy --fail-level WARNING
+            kronplan:ci manage.py check --deploy --fail-level WARNING
 
   ci-ok:
     name: CI

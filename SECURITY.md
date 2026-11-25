@@ -12,7 +12,7 @@ Sólo la última versión menor recibe arreglos. No hay ramas de mantenimiento.
 ## Cómo reportar
 
 **No abras un issue público.** Usa
-[Report a vulnerability](https://github.com/Blandskron/planning-pocket/security/advisories/new),
+[Report a vulnerability](https://github.com/Blandskron/KronPlan/security/advisories/new),
 que es privado hasta que haya un arreglo.
 
 Ayuda mucho incluir:

@@ -66,6 +66,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "${GITHUB_REF_NAME}" \
-            --title "Planning Pocket ${GITHUB_REF_NAME}" \
+            --title "KronPlan ${GITHUB_REF_NAME}" \
             --notes-file release-notes.md \
             --verify-tag

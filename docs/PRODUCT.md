@@ -1,4 +1,4 @@
-# Planning Pocket - Producto y UX
+# KronPlan — Producto y UX
 
 ## 1. Visión del Producto
 Alternativa gratuita, moderna, profesional, rápida y sencilla de usar a Planning Poker Online.
@@ -52,56 +52,19 @@ Flujo central: Crear sala → compartir enlace → escribir nombre → votar.
 
 ## 5. Design System
 
-El frontend declara una sola vez sus primitivas de marca en `static/css/style.css` y las
-traduce desde ahí a los nombres semánticos que consumen los componentes (`--surface`,
-`--accent`, `--felt`…). Cambiar de tema o evolucionar la paleta hacia la identidad
-**KronPlan (BLANDSKRON)** es actualizar esa capa de traducción, no repintar componentes.
+La especificación completa de identidad visual y tokens vive en [`docs/BRAND_GUIDELINES.md`](BRAND_GUIDELINES.md) y [`docs/DESIGN_SYSTEM.md`](DESIGN_SYSTEM.md).
 
-### Reglas de contraste y tokens activos
+El frontend declara una sola vez sus primitivas de marca `--kp-*` en `static/css/style.css` y las traduce a los tokens semánticos que consumen los componentes (`--bg`, `--surface`, `--accent`, `--felt`…).
 
-| Rol | Token activo (claro / oscuro) | Papel |
-| --- | --- | --- |
-| `--brand` / `--brand-bright` | `#ed117b` / `#ff4da3` | Decorativo (brillos, bordes, reversos de carta). Nunca lleva texto encima en claro. |
-| `--accent` (`--primary`) | `#c7005f` / `#ff80bd` | Única acción interactiva con texto encima, ajustada para cumplir WCAG AA en ambos modos. |
-| `--felt` / `--felt-deep` | `#4a2a7d` / `#3b246f` | Paño de la mesa, oscuro en ambos temas para mantener legible la paleta de asientos. |
-| `--success` / `--warning` / `--danger` | `#0a6549`·`#5ee0c0` / `#8a5a05`·`#fbbf24` / `#bd2949`·`#fb7185` | Semántica: votó, pendiente, error. |
-
-### Temas
-
-El tema oscuro es la lectura canónica del producto, con un modo claro de alto contraste
-sobre superficie suave y preferencia del sistema/usuario almacenada en el navegador.
-
-`--brand` y `--accent` son tokens distintos a propósito: un color de acento saturado que no
-pasa AA (4,5:1) sobre papel blanco o vidrio translúcido sólo decora y nunca lleva texto
-encima; `--accent` sí lleva texto y está calibrado en claro y oscuro para superar 4,5:1.
+- **Temas:** modo oscuro por defecto (`dark`), modo claro (`light`) y preferencia del sistema (`system`), almacenados en navegador y verificados bajo WCAG 2.2 AA.
+- **Tipografía:** **Sora** (títulos/display), **Inter** (interfaz/cuerpo) y **JetBrains Mono** (cartas, códigos y cifras tabulares), con respaldo del sistema.
+- **Escala, forma y movimiento:** base espacial de 4 px, radios de `8/12/16/24/999 px`, iconografía Lucide SVG (`templates/partials/_icons.html`), microinteracciones de 150–250 ms y respeto estricto de `prefers-reduced-motion`.
 
 ### La regla que más fácil se rompe
 
 **Una superficie que no cambia con el tema no puede llevar texto de un token que sí cambia.**
 
-Hay tres de esas superficies: la **cara de la carta** (`--card-face`, clara siempre, porque una
-carta es un objeto claro), el **panel de marca** del login y el registro (oscuro siempre) y
-el **paño**. El texto que cae encima se deriva de la propia superficie
-(`color-mix(in srgb, var(--card-ink) 62%, var(--card-face))`) o es un literal relativo a ella
-(`#ff9ac9` para el rótulo sobre el panel). Usar `--muted` o `--text-soft` ahí compila, pasa los
-tests y desaparece en uno de los dos temas.
-
-Medido sobre el DOM renderizado, componiendo el fondo real de cada texto: **0 fallos AA** en las
-seis pantallas, con mínimos de 4,82:1 en oscuro y 4,66:1 en claro.
-
-### Tipografía
-
-- Títulos: **Manrope** (600/700/800), con `letter-spacing` negativo.
-- Texto y números de carta: **Inter** (400/500/600/700).
-- Ambas con familia de respaldo del sistema, por si la fuente no carga.
-
-### Forma y movimiento
-
-- Radios: control `14px`, tarjeta `22px`, panel `28px`, píldora `999px`. Los botones son píldoras;
-  no hay rectángulos de esquina pequeña en acciones.
-- Curva de animación: `cubic-bezier(.22, .61, .36, 1)`, a `.18s` (rápida) o `.35s` (media).
-- Sombras de tarjeta con reflejo interior arriba (`inset 0 1px 0 rgba(255,255,255,.07)`), que es
-  lo que separa un panel translúcido del campo que tiene detrás.
+Hay tres de esas superficies: la **cara de la carta** (`--card-face`, clara siempre, porque una carta es un objeto claro), el **panel de marca** del login y el registro (oscuro siempre) y el **paño** (`--felt`). El texto encima debe derivarse de la propia superficie (`--card-ink` o tokens fijos calibrados para esa superficie) y nunca usar tokens variables entre temas como `--muted` o `--text-soft`.
 
 ### Carcasa móvil
 
@@ -112,6 +75,5 @@ aplicación. Ver `docs/ROOM_VISUAL_DESIGN.md` para el detalle de la sala; en res
 - **Barra de pestañas inferior** con los destinos de la app. Antes los enlaces del encabezado
   simplemente desaparecían en pantalla pequeña y no reaparecían en ningún sitio: el usuario de
   teléfono se quedaba sin crear sala ni cerrar sesión.
-- En la sala, la baraja se ancla al borde inferior como la mano de cartas de un juego, y la barra
-  de pestañas se retira para no competir por ese borde.
+- En la sala, la baraja se ancla encima de la barra de pestañas inferior, reservando la suma de ambas alturas para votar con un solo toque sin perder la navegación.
 - `100dvh` en lugar de `100vh`, y `env(safe-area-inset-*)` en todo lo anclado.

@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}{{ room.name }} · Planning Pocket{% endblock %}
+{% block title %}{{ room.name }} · KronPlan{% endblock %}
 {% block shell_class %}room-shell{% endblock %}
 {% block body_class %}is-room{% endblock %}
 
@@ -9,8 +9,8 @@
 <section class="poker-room" data-owner="{{ is_owner|yesno:'true,false' }}">
     <header class="room-topbar">
         <div class="room-brand">
-            <span class="room-mark" aria-hidden="true">P</span>
-            <div><span class="room-kicker">Mesa de planning</span><strong>{{ room.name }}</strong><span class="room-code">#{{ room.public_id }}</span></div>
+            <span class="room-mark" aria-hidden="true">K</span>
+            <div><span class="room-kicker">Mesa KronPlan</span><strong>{{ room.name }}</strong><span class="room-code">#{{ room.public_id }}</span></div>
         </div>
         <div class="room-top-actions">
             {% if is_owner %}<span class="facilitator-badge">Facilitador</span>{% endif %}
@@ -59,7 +59,7 @@
                 </div>
             </details>
             <span id="ws-status" class="connection-state" title="Conectando"><span aria-hidden="true"></span><span class="connection-label">Conectando</span></span>
-            <button class="room-button room-button-secondary" type="button" id="share-room"><span aria-hidden="true">↗</span> Compartir</button>
+            <button class="room-button room-button-secondary" type="button" id="share-room"><svg class="kp-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-share"></use></svg> Compartir</button>
         </div>
     </header>
 
@@ -73,7 +73,7 @@
                     {{ issue_form.title }}
                     <label class="sr-only" for="{{ issue_form.description.id_for_label }}">Descripción opcional</label>
                     {{ issue_form.description }}
-                    <button class="room-button room-button-secondary" type="submit" name="add_issue"><span aria-hidden="true">＋</span> Añadir historia</button>
+                    <button class="room-button room-button-secondary" type="submit" name="add_issue"><svg class="kp-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-plus"></use></svg> Añadir historia</button>
                 </form>
             {% endif %}
             <ul class="room-issue-list" id="room-issues">
@@ -173,8 +173,8 @@
 
             <div class="room-controls">
                 {% if is_owner %}
-                    <button class="room-button room-button-primary" id="reveal-button" type="button"><span aria-hidden="true">◇</span> Revelar votos</button>
-                    <button class="room-button room-button-secondary" id="reset-button" type="button"><span aria-hidden="true">↻</span> Nueva ronda</button>
+                    <button class="room-button room-button-primary" id="reveal-button" type="button"><svg class="kp-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-eye"></use></svg> Revelar votos</button>
+                    <button class="room-button room-button-secondary" id="reset-button" type="button"><svg class="kp-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-rotate-ccw"></use></svg> Nueva ronda</button>
                     <div id="finish-issue-panel" class="finish-issue" {% if room.voting_status != 'revealed' or not room.active_issue %}hidden{% endif %}>
                         <label class="sr-only" for="final-result-input">Estimación final</label>
                         <input type="text" id="final-result-input" placeholder="Estimación final" inputmode="decimal">
@@ -224,7 +224,10 @@ let selectedItem = '{{ throwables.0.0 }}';
 /* A personal switch, remembered per browser. Independent of the facilitator's
    room-wide one: either being off is enough to stop the effects here. */
 let effectsOn = true;
-try { effectsOn = localStorage.getItem('planning-pocket-effects') !== 'off'; } catch (_) {}
+try {
+    const savedEffects = localStorage.getItem('kronplan-effects') || localStorage.getItem('planning-pocket-effects');
+    effectsOn = savedEffects !== 'off';
+} catch (_) {}
 let recessOpen = {{ room.recess_open|yesno:"true,false" }};
 /* Positions live only here, for as long as the recess lasts. Nothing is stored on
    the server and nothing survives a reveal. */
@@ -674,7 +677,10 @@ function travelCard(button, value) {
    requests and no bytes. Off by default, one switch, remembered per browser. The
    context is only created after a real click, because browsers refuse otherwise. */
 let soundOn = false;
-try { soundOn = localStorage.getItem('planning-pocket-sound') === 'on'; } catch (_) {}
+try {
+    const savedSound = localStorage.getItem('kronplan-sound') || localStorage.getItem('planning-pocket-sound');
+    soundOn = savedSound === 'on';
+} catch (_) {}
 let audio = null;
 
 const TONES = {
@@ -718,7 +724,7 @@ function playTone(name) {
 
 function setSound(on) {
     soundOn = on;
-    try { localStorage.setItem('planning-pocket-sound', on ? 'on' : 'off'); } catch (_) {}
+    try { localStorage.setItem('kronplan-sound', on ? 'on' : 'off'); } catch (_) {}
     const button = document.getElementById('sound-switch');
     button.setAttribute('aria-pressed', String(on));
     button.title = on ? 'Silenciar' : 'Activar sonido';
@@ -838,7 +844,7 @@ function playThrow(throwerId, targetId, item) {
 
 function setEffects(on) {
     effectsOn = on;
-    try { localStorage.setItem('planning-pocket-effects', on ? 'on' : 'off'); } catch (_) {}
+    try { localStorage.setItem('kronplan-effects', on ? 'on' : 'off'); } catch (_) {}
     const button = document.getElementById('effects-switch');
     button.setAttribute('aria-pressed', String(on));
     button.title = on ? 'Desactivar efectos en tu pantalla' : 'Activar efectos en tu pantalla';
@@ -1246,6 +1252,24 @@ document.getElementById('room-issues').addEventListener('click', event => {
 document.getElementById('deck').addEventListener('click', event => {
     const card = event.target.closest('.poker-card');
     if (card && !card.disabled) castVote(card.dataset.card, card);
+});
+document.getElementById('deck').addEventListener('keydown', event => {
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+    const cards = Array.from(document.querySelectorAll('#deck .poker-card:not(:disabled)'));
+    const here = cards.indexOf(document.activeElement);
+    if (here < 0 || cards.length < 2) return;
+    event.preventDefault();
+    const next = (here + (event.key === 'ArrowRight' ? 1 : -1) + cards.length) % cards.length;
+    cards[next].focus();
+});
+document.addEventListener('keydown', event => {
+    if (event.ctrlKey || event.metaKey || event.altKey) return;
+    const target = event.target;
+    if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT' || target.isContentEditable)) return;
+    if (votingStatus === 'revealed' || recessOpen) return;
+    if (!['0', '1', '2', '3', '5', '8', '?'].includes(event.key)) return;
+    const card = document.querySelector('#deck .poker-card[data-card="' + event.key + '"]:not(:disabled)');
+    if (card) castVote(card.dataset.card, card);
 });
 
 [['reveal-button', revealRoom], ['reset-button', resetRoom],
